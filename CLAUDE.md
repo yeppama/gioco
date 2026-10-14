@@ -5,7 +5,7 @@
 - JavaScript puro + Phaser 4 da cdnjs, niente bundler né npm: il gioco si apre con index.html.
 - Tutti i numeri di bilanciamento stanno in `config.js`, mai sparsi nella logica.
 - Una funzionalità alla volta: piccola, provata, poi la successiva.
-- Comandi (tastiera e touch) solo in `controlli.js`.
+- Comandi solo in `controlli.js`. Per ora solo tastiera: il mobile è sospeso finché Stefano non decide l'interfaccia.
 - File piccoli e separati per argomento (giocatore, nemici, abilità, interfaccia).
 - Personaggi, nomi e storia originali: solo l'atmosfera è ispirata a Elden Ring.
 - Il gioco è pubblicato con GitHub Pages dal ramo `main`.

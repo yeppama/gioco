@@ -41,6 +41,11 @@ const ABILITA = [
   },
 
   {
+    id: 'casino', nome: 'Casinò', max: 3,
+    descrizione: (liv) => [15, 40, 60][liv - 1] + '% di probabilità che un colpo non consumi frecce',
+    applica: (s, liv) => { s.frecciaGratis = Math.max(s.frecciaGratis, [0.15, 0.4, 0.6][liv - 1]); },
+  },
+  {
     id: 'manirapide', nome: 'Mani rapide', max: 3,
     descrizione: () => 'La ricarica dura il 15% in meno',
     applica: (s, liv) => { s.ricaricaMs *= Math.pow(0.85, liv); },
@@ -85,6 +90,24 @@ const ABILITA = [
     applica: (s, liv) => { s.costoSchivata -= 2 * liv; },
   },
 ];
+
+// ------------------------------------------------------------
+// COMBINAZIONI: quando hai gli ingredienti, al prossimo level up
+// compare una carta dorata in più. requisiti = { id: livello minimo }
+// ------------------------------------------------------------
+const COMBINAZIONI = [
+  {
+    id: 'ventofortuna', nome: 'Vento della fortuna', max: 1, rarita: 'combinazione',
+    requisiti: { casino: 3, passo: 2 },
+    descrizione: () => '75% di colpi gratis e un tiro circolare ogni 7 s (più spesso con più frecce nella faretra)',
+    applica: (s) => { s.frecciaGratis = Math.max(s.frecciaGratis, 0.75); s.tiroCircolare = true; },
+  },
+];
+
+// Le combinazioni pronte da offrire: ingredienti presi e combinazione non ancora presa
+function combinazioniPronte(livelli) {
+  return COMBINAZIONI.filter(c => !livelli[c.id] && Object.entries(c.requisiti).every(([id, liv]) => (livelli[id] || 0) >= liv));
+}
 
 // Pesca fino a "quante" voci diverse da una tabella (abilità o benedizioni),
 // escluse quelle già al massimo. Le voci rare hanno meno probabilità di uscire.

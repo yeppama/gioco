@@ -21,6 +21,10 @@ class GestoreRound {
     this.inizio = 0;
     this.inizioFuria = 0;
     this.prossimaComparsa = 0;
+    this.eventoProssimo = null;  // evento speciale deciso dalla scala dei round senza danni
+    this.moltExtra = 1;          // round "più duro"
+    this.minibossA = 0;          // quando far comparire il mini boss "a sorpresa" (0 = nessuno)
+    this.dopoBossFurbo = false;  // quando muore il boss furbo arrivano due mini boss
   }
 
   // --- Numeri che dipendono dal round ---
@@ -43,7 +47,7 @@ class GestoreRound {
 
   // Quanto sono più forti i nemici rispetto ai valori di config.js
   moltiplicatore() {
-    return (1 + CRESCITA_PER_CICLO * this.ciclo()) * (1 + CRESCITA_PER_ROUND * (this.roundNelCiclo() - 1));
+    return (1 + CRESCITA_PER_CICLO * this.ciclo()) * (1 + CRESCITA_PER_ROUND * (this.roundNelCiclo() - 1)) * this.moltExtra;
   }
 
   // Dopo i 45 secondi i nemici rimasti accelerano sempre di più
@@ -92,14 +96,29 @@ class GestoreRound {
       return;
     }
 
-    // Round del boss: niente tempo, finisce quando il boss (e i suoi evocati) sono morti
-    if (this.tipo === 'boss') {
-      if (nemiciVivi === 0) this.terminaRound(t);
+    // Round del boss (o evento speciale): niente tempo, finisce quando sono tutti morti
+    if (this.tipo === 'boss' || this.tipo === 'evento') {
+      if (nemiciVivi === 0 && this.dopoBossFurbo) {
+        // Il boss furbo è caduto: subito dopo, due mini boss
+        this.dopoBossFurbo = false;
+        generaBoss(this.scena, 'miniboss');
+        generaBoss(this.scena, 'miniboss');
+        this.scena.interfaccia.mostraBanner('E ora due Sentinelle!');
+      } else if (nemiciVivi === 0) {
+        this.terminaRound(t);
+      }
       return;
     }
 
+    // Mini boss "a sorpresa" (scala dei round senza danni)
+    if (this.minibossA && (t >= this.minibossA || this.fase === 'ripulisci')) {
+      this.minibossA = 0;
+      generaBoss(this.scena, 'miniboss');
+      this.scena.interfaccia.mostraBanner('Una Sentinella ti ha trovato!');
+    }
+
     if (this.fase === 'combattimento') {
-      if (t - this.inizio >= this.durataS() * 1000) {
+      if (t - this.inizio >= this.durataS() * 1000 && !this.minibossA) {
         this.fase = 'ripulisci';
         this.inizioFuria = t;
         if (nemiciVivi > 0) this.scena.interfaccia.mostraBanner('Elimina i rimasti!');
@@ -123,6 +142,27 @@ class GestoreRound {
     this.inizio = t;
     this.prossimaComparsa = t + 500;
     this.scena.dannoNelRound = false;
+    this.moltExtra = 1;
+
+    // Eventi della scala dei round senza danni
+    const evento = this.eventoProssimo;
+    this.eventoProssimo = null;
+    if (evento === 'doppioboss' || evento === 'bossfurbo' ) {
+      this.tipo = 'evento';
+      if (evento === 'doppioboss') {
+        generaBoss(this.scena, 'boss');
+        generaBoss(this.scena, 'boss');
+        this.scena.interfaccia.mostraBanner('Doppio boss!');
+      } else {
+        rendiFurbo(generaBoss(this.scena, 'boss'));
+        this.dopoBossFurbo = true;
+        this.scena.interfaccia.mostraBanner('Il Custode ti studia...');
+      }
+      return;
+    }
+    if (evento === 'difficile') this.moltExtra = SCALA_PERFETTI.moltDifficile;
+    if (evento === 'miniboss' && this.tipo === 'normale') this.minibossA = t + Phaser.Math.Between(4000, 12000);
+
     // Dopo il round 7 di ogni ciclo (e fino al boss) arriva un nemico d'élite
     this.eliteDaGenerare = this.tipo === 'normale' && this.roundNelCiclo() > ELITE.dopoRound;
 
@@ -136,7 +176,7 @@ class GestoreRound {
       generaBoss(this.scena, 'miniboss');
       this.scena.interfaccia.mostraBanner('Round ' + this.numero + ': ' + MINIBOSS.nome);
     } else {
-      this.scena.interfaccia.mostraBanner('Round ' + this.numero);
+      this.scena.interfaccia.mostraBanner('Round ' + this.numero + (this.moltExtra > 1 ? ': più duro!' : ''));
     }
   }
 
@@ -148,6 +188,7 @@ class GestoreRound {
     for (const p of this.scena.proiettiliNemici.getChildren()) if (p.active) disattivaProiettile(p);
     svuotaZone(this.scena);
 
+    this.minibossA = 0;
     if (this.tipo === 'boss') {
       this.scena.espandiArena();
       this.scena.interfaccia.mostraBanner('Boss sconfitto! L\'arena si allarga');
@@ -155,6 +196,14 @@ class GestoreRound {
       this.scena.interfaccia.mostraBanner('Round ' + this.numero + ' superato!');
     }
     this.scena.fineRound(this.numero, this.tipo === 'boss');
+  }
+
+  // Salto in avanti (premio dei 10 round senza danni): nuova arena del ciclo raggiunto
+  salta(quanti) {
+    const cicloPrima = this.ciclo();
+    this.numero += quanti;
+    if (this.ciclo() !== cicloPrima) this.scena.rigeneraArena(this.ciclo());
+    this.scena.interfaccia.mostraBanner('Scaraventato avanti di ' + quanti + ' round!');
   }
 
   // Sceglie un tipo tra quelli già sbloccati, tenendo conto dei pesi
@@ -171,7 +220,7 @@ class GestoreRound {
 
   // Testo sotto il numero del round: secondi rimasti, nemici da eliminare...
   testoStato(t) {
-    if (this.fase === 'pausa' || this.tipo === 'boss') return '';
+    if (this.fase === 'pausa' || this.tipo === 'boss' || this.tipo === 'evento') return '';
     if (this.fase === 'ripulisci') return 'Rimasti: ' + this.scena.nemici.countActive();
     return Math.max(0, Math.ceil(this.durataS() - (t - this.inizio) / 1000)) + ' s';
   }

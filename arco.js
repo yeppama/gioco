@@ -15,6 +15,8 @@ class Arco {
     this.inRicarica = false;
     this.fineRicarica = 0;
     this.prossimoSparo = 0;
+    this.prossimaOnda = 0;
+    this.prossimoCircolare = 0;
     // Colpo caricato
     this.staCaricando = false;
     this.carica = 0;            // frecce messe da parte
@@ -45,9 +47,10 @@ class Arco {
     return true;
   }
 
-  // Chiamata ogni fotogramma. "tiene" = Spazio o pulsante di carica premuti
+  // Chiamata ogni fotogramma. "tiene" = Spazio tenuto premuto
   aggiorna(t, tiene) {
     const g = this.scena.giocatore;
+    this.gestisciCircolare(t);
     this.indicatore.setPosition(g.x, g.y).setVisible(this.staCaricando);
     if (this.staCaricando) this.indicatore.setRadius(22 + this.carica * 2.5);
 
@@ -84,7 +87,8 @@ class Arco {
     // Tiro normale automatico
     if (t >= this.prossimoSparo) {
       this.spara();
-      this.frecceRimaste--; // una raffica costa una freccia, anche se ne partono di più
+      // Una raffica costa una freccia, anche se ne partono di più (Casinò: a volte è gratis)
+      if (Math.random() >= this.stats.frecciaGratis) this.frecceRimaste--;
       this.prossimoSparo = t + this.stats.cadenzaMs;
       if (this.frecceRimaste === 0) this.iniziaRicarica(t);
     }
@@ -122,6 +126,54 @@ class Arco {
         this.lancia(x, y, a + deviazione);
       }
     }
+  }
+
+  // Colpo onda (doppio Spazio): un muro di frecce che attraversa tutto
+  sparaOnda(t) {
+    const scena = this.scena;
+    if (this.stats.frecceFaretra < COLPO_ONDA.faretraMinima) {
+      scena.interfaccia.mostraBanner('Onda: servono ' + COLPO_ONDA.faretraMinima + ' frecce nella faretra');
+      return;
+    }
+    if (t < this.prossimaOnda || !this.consuma(COLPO_ONDA.costo, t)) {
+      scena.interfaccia.lampeggiaFrecce();
+      return;
+    }
+    this.prossimaOnda = t + COLPO_ONDA.ricaricaMs;
+    const g = scena.giocatore;
+    const angolo = Math.atan2(scena.direzione.y, scena.direzione.x);
+    const perpendicolare = angolo + Math.PI / 2;
+    for (let i = 0; i < COLPO_ONDA.frecce; i++) {
+      const spostamento = (i - (COLPO_ONDA.frecce - 1) / 2) * COLPO_ONDA.spaziatura;
+      this.lancia(g.x + Math.cos(perpendicolare) * spostamento, g.y + Math.sin(perpendicolare) * spostamento, angolo, {
+        moltDanno: COLPO_ONDA.moltDanno, perforazioniExtra: 99, colore: 0x7fffd4, fonte: 'Colpo onda',
+      });
+    }
+    scena.cameras.main.shake(100, 0.004);
+  }
+
+  // Tiro circolare (Vento della fortuna): frecce in tutte le direzioni, gratis
+  gestisciCircolare(t) {
+    if (!this.stats.tiroCircolare || t < this.prossimoCircolare) return;
+    this.prossimoCircolare = t + this.intervalloCircolare() * 1000;
+    const g = this.scena.giocatore;
+    for (let i = 0; i < TIRO_CIRCOLARE.frecce; i++) {
+      const a = (Math.PI * 2 * i) / TIRO_CIRCOLARE.frecce;
+      this.lancia(g.x + Math.cos(a) * PARTENZA_FRECCIA, g.y + Math.sin(a) * PARTENZA_FRECCIA, a, { colore: 0xf7d774, fonte: 'Tiro circolare' });
+    }
+  }
+
+  // Secondi tra due tiri circolari: si legge la tabella, interpolando tra i punti
+  intervalloCircolare() {
+    const punti = TIRO_CIRCOLARE.tempi;
+    const f = this.stats.frecceFaretra;
+    if (f <= punti[0][0]) return punti[0][1];
+    for (let i = 1; i < punti.length; i++) {
+      const [f0, s0] = punti[i - 1];
+      const [f1, s1] = punti[i];
+      if (f <= f1) return s0 + (s1 - s0) * (f - f0) / (f1 - f0);
+    }
+    return punti[punti.length - 1][1];
   }
 
   // Colpo caricato: tutte le frecce messe da parte, quasi parallele, che perforano

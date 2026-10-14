@@ -157,9 +157,11 @@ class ScenaPartita extends Phaser.Scene {
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
 
     if (this.controlli.ricaricaManuale()) this.arco.ricaricaManuale(t);
+    if (this.controlli.onda()) this.arco.sparaOnda(t);
     this.arco.aggiorna(t, this.controlli.caricaPremuta());
     this.gestisciDifese(t);
     this.fulmine.aggiorna(t, passo);
+    if (this.arena.terrenoIn(this.giocatore.x, this.giocatore.y) === 'lava') this.subisciDanno(TERRENI.lavaDanno);
     this.lame.aggiorna(t);
     this.consumabili.aggiorna(t);
     this.round.aggiorna(t);
@@ -192,8 +194,11 @@ class ScenaPartita extends Phaser.Scene {
     // Da fermo resta l'ultima direzione, quindi si continua a sparare lì.
     if (dx !== 0 || dy !== 0) this.direzione = { x: -dx, y: -dy };
 
-    // Mentre carichi il colpo ti muovi più lento
-    const velocita = this.stats.velocita * (this.arco.staCaricando ? COLPO_CARICATO.rallentamento : 1);
+    // Mentre carichi il colpo ti muovi più lento; nei rovi anche
+    const nelRovi = this.arena.terrenoIn(this.giocatore.x, this.giocatore.y) === 'rovi';
+    const velocita = this.stats.velocita
+      * (this.arco.staCaricando ? COLPO_CARICATO.rallentamento : 1)
+      * (nelRovi ? TERRENI.roviRallentamento : 1);
     this.giocatore.body.setVelocity(dx * velocita, dy * velocita);
   }
 
@@ -333,7 +338,24 @@ class ScenaPartita extends Phaser.Scene {
     if (!this.dannoNelRound) {
       this.roundSenzaDanni++;
       this.codaScelte.push({ tipo: 'premio', titolo: 'Round senza danni!' });
+      this.scalaPerfetti();
     } else {
+      this.roundSenzaDanni = 0;
+    }
+  }
+
+  // Più round di fila senza danni = prove più dure, e alla fine un premio enorme
+  scalaPerfetti() {
+    const n = this.roundSenzaDanni;
+    const S = SCALA_PERFETTI;
+    if (n === S.minibossA) this.round.eventoProssimo = 'miniboss';
+    else if (n === S.difficileA) this.round.eventoProssimo = 'difficile';
+    else if (n === S.doppioBossA) this.round.eventoProssimo = 'doppioboss';
+    else if (n === S.bossFurboA) this.round.eventoProssimo = 'bossfurbo';
+    else if (n >= S.premioA) {
+      this.codaScelte.push({ tipo: 'divina', titolo: '10 round perfetti: benedizione divina' });
+      this.codaScelte.push({ tipo: 'divina', titolo: '10 round perfetti: seconda benedizione' });
+      this.round.salta(S.salto);
       this.roundSenzaDanni = 0;
     }
   }
@@ -347,6 +369,11 @@ class ScenaPartita extends Phaser.Scene {
   apriScelta(voce) {
     const tabelle = { abilita: ABILITA, maledetta: MALEDETTE, divina: DIVINE, premio: PREMI };
     const opzioni = estraiOpzioni(this.livelliAbilita, 3, tabelle[voce.tipo]);
+    // Se una combinazione è pronta, prende il posto della terza carta
+    if (voce.tipo === 'abilita') {
+      const combo = combinazioniPronte(this.livelliAbilita)[0];
+      if (combo) opzioni.splice(2, 1, { id: combo.id, nome: combo.nome, livello: 1, rarita: 'combinazione', descrizione: combo.descrizione() });
+    }
     if (opzioni.length === 0) return; // tutto già al massimo
     this.giocatore.body.setVelocity(0, 0);
     this.controlli.rilascia();
@@ -399,7 +426,11 @@ class ScenaPartita extends Phaser.Scene {
 
   // Dopo ogni boss: nuova arena più grande, giocatore di nuovo al centro
   espandiArena() {
-    this.arena.genera(this.round.ciclo() + 1);
+    this.rigeneraArena(this.round.ciclo() + 1);
+  }
+
+  rigeneraArena(ciclo) {
+    this.arena.genera(ciclo);
     this.flowField = this.arena.flowField;
     this.giocatore.body.reset(this.arena.l / 2, this.arena.a / 2);
     this.arco.disattivaTutte();

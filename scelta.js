@@ -47,25 +47,27 @@ class ScenaScelta extends Phaser.Scene {
 
     opzioni.forEach((o, i) => {
       const x = primoX + i * (largh + spazio);
+      const bordo = o.rarita === 'combinazione' ? 0xf1c40f : stile.bordo; // le combinazioni hanno il bordo dorato
       const carta = this.add.rectangle(x, y, largh, alt, 0x23232d)
-        .setStrokeStyle(2, stile.bordo)
+        .setStrokeStyle(o.rarita === 'combinazione' ? 3 : 2, bordo)
         .setInteractive({ useHandCursor: true });
 
       this.add.text(x - largh / 2 + 14, y - alt / 2 + 10, String(i + 1), { fontSize: '16px', color: '#5a5a6a' });
       this.add.text(x, y - 80, o.nome, {
         fontSize: '21px', color: '#ffffff', fontStyle: 'bold', align: 'center', wordWrap: { width: largh - 24 },
       }).setOrigin(0.5);
-      const etichetta = (o.livello > 1 ? 'Livello ' + o.livello : 'Nuova') + (o.rarita === 'rara' ? '  ·  Rara' : '');
-      this.add.text(x, y - 42, etichetta, {
-        fontSize: '15px', color: o.rarita === 'rara' ? '#5dade2' : (o.livello > 1 ? '#6fd36f' : '#f2e6b8'),
-      }).setOrigin(0.5);
+      const etichetta = o.rarita === 'combinazione' ? 'Combinazione'
+        : (o.livello > 1 ? 'Livello ' + o.livello : 'Nuova') + (o.rarita === 'rara' ? '  ·  Rara' : '');
+      const coloreEtichetta = o.rarita === 'combinazione' ? '#f1c40f'
+        : (o.rarita === 'rara' ? '#5dade2' : (o.livello > 1 ? '#6fd36f' : '#f2e6b8'));
+      this.add.text(x, y - 42, etichetta, { fontSize: '15px', color: coloreEtichetta }).setOrigin(0.5);
       this.add.text(x, y - 10, o.descrizione, {
         fontSize: '16px', color: '#cfcfd8', align: 'center', wordWrap: { width: largh - 30 },
       }).setOrigin(0.5, 0);
 
       // Bordo chiaro quando ci passi sopra
       carta.on('pointerover', () => carta.setStrokeStyle(3, 0xf2e6b8));
-      carta.on('pointerout', () => carta.setStrokeStyle(2, stile.bordo));
+      carta.on('pointerout', () => carta.setStrokeStyle(2, bordo));
       carta.on('pointerdown', () => this.scegli(o.id));
     });
 

@@ -31,16 +31,20 @@ class Arena {
     scena.physics.world.setBounds(0, 0, this.l, this.a);
     scena.cameras.main.setBounds(0, 0, this.l, this.a);
 
-    // Ostacoli a caso, con dei tentativi limitati (mai un ciclo infinito)
+    // Ostacoli a caso, con dei tentativi limitati (mai un ciclo infinito).
+    // Dai cicli avanzati una parte diventa muri lunghi: la mappa cambia forma.
     this.ostacoli.clear(true, true);
     this.datiOstacoli = [];
     const quanti = Math.round((this.l * this.a) / ARENA.areaPerOstacolo);
     for (let tentativo = 0; tentativo < quanti * 30 && this.datiOstacoli.length < quanti; tentativo++) {
+      const muro = ciclo >= TERRENI.muriDalCiclo && Math.random() < TERRENI.quotaMuri;
+      const lungo = Phaser.Math.Between(160, 260);
+      const orizzontale = Math.random() < 0.5;
       const o = {
-        l: Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
-        a: Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
-        x: Phaser.Math.Between(80, this.l - 80),
-        y: Phaser.Math.Between(80, this.a - 80),
+        l: muro ? (orizzontale ? lungo : 36) : Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
+        a: muro ? (orizzontale ? 36 : lungo) : Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
+        x: Phaser.Math.Between(150, this.l - 150),
+        y: Phaser.Math.Between(150, this.a - 150),
       };
       if (Phaser.Math.Distance.Between(o.x, o.y, this.l / 2, this.a / 2) < ARENA.zonaLiberaCentro) continue;
       const troppoVicino = this.datiOstacoli.some(altro =>
@@ -56,6 +60,29 @@ class Arena {
 
     // Mappa dei percorsi per i nemici, grande quanto la nuova arena
     this.flowField = new FlowField(this.l, this.a, CELLA_FLOW, this.datiOstacoli, MARGINE_FLOW);
+
+    // Terreni di disturbo (dal secondo ciclo): lava che brucia e rovi che rallentano
+    for (const tr of this.terreni || []) tr.grafica.destroy();
+    this.terreni = [];
+    const chiazze = TERRENI.perCiclo * ciclo;
+    for (let tentativo = 0; tentativo < chiazze * 20 && this.terreni.length < chiazze; tentativo++) {
+      const r = Phaser.Math.Between(TERRENI.raggioMin, TERRENI.raggioMax);
+      const x = Phaser.Math.Between(r + 20, this.l - r - 20);
+      const y = Phaser.Math.Between(r + 20, this.a - r - 20);
+      if (Phaser.Math.Distance.Between(x, y, this.l / 2, this.a / 2) < ARENA.zonaLiberaCentro + r) continue;
+      const tipo = Math.random() < 0.5 ? 'lava' : 'rovi';
+      const grafica = scena.add.circle(x, y, r, tipo === 'lava' ? 0xd35400 : 0x2e7d32, 0.35)
+        .setStrokeStyle(2, tipo === 'lava' ? 0xff7a1a : 0x66bb6a, 0.6).setDepth(-9);
+      this.terreni.push({ x, y, r, tipo, grafica });
+    }
+  }
+
+  // Su che terreno si trova un punto: 'lava', 'rovi' oppure null
+  terrenoIn(x, y) {
+    for (const tr of this.terreni) {
+      if (Phaser.Math.Distance.Between(x, y, tr.x, tr.y) < tr.r) return tr.tipo;
+    }
+    return null;
   }
 
   // true se nel punto non c'è un ostacolo

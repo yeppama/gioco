@@ -26,6 +26,8 @@ function calcolaStatistiche(livelli) {
     fuocoDanno: 0,        // 0 = frecce normali
     geloRallenta: 0,      // 0 = frecce normali; 0.3 = rallenta del 30%
     lame: 0,              // numero di lame orbitanti
+    frecciaGratis: 0,     // probabilità che un colpo non consumi frecce (Casinò)
+    tiroCircolare: false, // combinazione Vento della fortuna
     // Moltiplicatori (benedizioni)
     dannoMolt: 1,
     vitaMaxMolt: 1,
@@ -36,7 +38,7 @@ function calcolaStatistiche(livelli) {
     rigenerazioneBloccata: false,
   };
 
-  for (const voce of [...ABILITA, ...MALEDETTE, ...DIVINE, ...PREMI]) {
+  for (const voce of [...ABILITA, ...COMBINAZIONI, ...MALEDETTE, ...DIVINE, ...PREMI]) {
     const liv = livelli[voce.id] || 0;
     if (liv > 0) voce.applica(s, liv);
   }

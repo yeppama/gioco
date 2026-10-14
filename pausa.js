@@ -35,7 +35,12 @@ class ScenaPausa extends Phaser.Scene {
 
     // Colonna sinistra: abilità
     titolo(40, 110, 'Abilità', '#f2e6b8');
-    testo(40, 140, elenco(ABILITA));
+    testo(40, 140, elenco([...ABILITA, ...COMBINAZIONI]));
+    // Ricette delle combinazioni, così si possono scoprire
+    const ricette = COMBINAZIONI.map(c => c.nome + ':\n  ' + Object.entries(c.requisiti)
+      .map(([id, liv]) => trovaVoce(id).nome + ' ' + liv).join(' + ')).join('\n');
+    titolo(40, 420, 'Combinazioni', '#f1c40f');
+    testo(40, 448, ricette, { fontSize: '14px' });
 
     // Colonna centrale: benedizioni
     titolo(300, 110, 'Benedizioni divine', '#f7d774');

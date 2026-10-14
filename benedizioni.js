@@ -98,5 +98,5 @@ const PREMI = [
 
 // Trova una voce in qualsiasi tabella (serve per "alPrendere")
 function trovaVoce(id) {
-  return [...ABILITA, ...MALEDETTE, ...DIVINE, ...PREMI].find(v => v.id === id);
+  return [...ABILITA, ...COMBINAZIONI, ...MALEDETTE, ...DIVINE, ...PREMI].find(v => v.id === id);
 }

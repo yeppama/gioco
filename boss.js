@@ -38,9 +38,51 @@ function generaBoss(scena, tipo) {
   return n;
 }
 
+// Boss "furbo" (scala dei round senza danni): prevede i tuoi movimenti e schiva le frecce
+function rendiFurbo(n) {
+  n.furbo = true;
+  n.elite = true; // usa la mira "predittiva" degli élite (e il bordo dorato)
+  n.vitaMax = Math.round(n.vitaMax * 1.5);
+  n.vita = n.vitaMax;
+  n.prossimaSchivata = 0;
+  return n;
+}
+
+// Se una freccia gli sta arrivando addosso, scarta di lato
+function provaASchivare(scena, n, t) {
+  if (t < n.prossimaSchivata) return false;
+  for (const f of scena.arco.frecce.getChildren()) {
+    if (!f.active) continue;
+    const dx = n.x - f.x;
+    const dy = n.y - f.y;
+    const distanza = Math.hypot(dx, dy);
+    if (distanza > 160) continue;
+    const v = f.body.velocity;
+    const velocita = Math.hypot(v.x, v.y) || 1;
+    // Sta venendo verso di lui? (e passerebbe abbastanza vicino)
+    const verso = (dx * v.x + dy * v.y) / velocita;
+    const laterale = Math.abs(dx * v.y - dy * v.x) / velocita;
+    if (verso <= 0 || laterale > n.dati.lato) continue;
+    const lato = Math.random() < 0.5 ? 1 : -1;
+    n.dirCarica = { x: -v.y / velocita * lato, y: v.x / velocita * lato };
+    n.stato = 'schiva';
+    n.fineStato = t + 220;
+    n.prossimaSchivata = t + 1100;
+    return true;
+  }
+  return false;
+}
+
 function aggiornaBoss(scena, n, t) {
   const d = n.dati;
   const g = scena.giocatore;
+
+  if (n.stato === 'schiva') {
+    n.body.setVelocity(n.dirCarica.x * 520, n.dirCarica.y * 520);
+    if (t >= n.fineStato) n.stato = 'avvicina';
+    return;
+  }
+  if (n.furbo && n.stato === 'avvicina' && provaASchivare(scena, n, t)) return;
 
   // Fase extra del boss: dal secondo ciclo, sotto metà vita
   if (n.tipoNemico === 'boss' && !n.faseExtra && scena.round.ciclo() >= 1 && n.vita < n.vitaMax * d.faseExtra.sogliaVita) {

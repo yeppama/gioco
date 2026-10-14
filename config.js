@@ -39,6 +39,29 @@ const PARTENZA_FRECCIA = 6;
 const ANGOLO_VENTAGLIO = 20;     // gradi tra una freccia del ventaglio e la successiva
 const DISTANZA_PARALLELE = 12;   // pixel tra frecce parallele (Freccia doppia)
 
+// Terreni di disturbo: dal secondo ciclo l'arena ha chiazze di lava e rovi,
+// sempre di più a ogni ciclo. Anche la forma degli ostacoli cambia (muri lunghi).
+const TERRENI = {
+  perCiclo: 4,              // chiazze in più per ogni ciclo
+  raggioMin: 45,
+  raggioMax: 90,
+  lavaDanno: 6,             // danno della lava (a ogni colpo, come un nemico)
+  roviRallentamento: 0.5,   // nei rovi ti muovi a metà velocità
+  muriDalCiclo: 1,          // da questo ciclo una parte degli ostacoli diventa muri lunghi
+  quotaMuri: 0.35,
+};
+
+// Scala dei round senza danni: chi è bravo viene messo alla prova (e premiato)
+const SCALA_PERFETTI = {
+  minibossA: 3,         // a 3 round senza danni: un mini boss compare nel round dopo
+  difficileA: 5,        // a 5: il round dopo è più duro
+  moltDifficile: 1.5,   // quanto più duro (vita e danno dei nemici)
+  doppioBossA: 7,       // a 7: doppio boss
+  bossFurboA: 9,        // a 9: un boss che legge i movimenti e schiva, poi doppio mini boss
+  premioA: 10,          // a 10: due benedizioni divine e salto in avanti
+  salto: 20,            // round saltati
+};
+
 // Colpo caricato (Spazio o pulsante sul telefono): tenendo premuto l'arco smette
 // di sparare e mette da parte frecce dalla faretra; al rilascio partono tutte insieme
 const COLPO_CARICATO = {
@@ -53,6 +76,24 @@ const COLPO_CARICATO = {
 
 // Due pressioni di Spazio entro questo tempo = colpo onda
 const DOPPIO_SPAZIO_MS = 300;
+
+// Colpo onda: si sblocca con una faretra da almeno 50 frecce.
+// Un muro di frecce che attraversa tutto, nella direzione del mirino.
+const COLPO_ONDA = {
+  faretraMinima: 50,
+  costo: 10,           // frecce consumate
+  ricaricaMs: 2000,    // tempo minimo tra due onde
+  frecce: 9,           // frecce affiancate che formano l'onda
+  spaziatura: 9,       // pixel tra una e l'altra
+  moltDanno: 2,
+};
+
+// Tiro circolare (combinazione Vento della fortuna): frecce in tutte le direzioni.
+// Più grande la faretra, più spesso parte: [frecce nella faretra, secondi tra un tiro e l'altro]
+const TIRO_CIRCOLARE = {
+  frecce: 16,
+  tempi: [[30, 7], [40, 6], [50, 5], [60, 4], [100, 1.5]],
+};
 
 // Fulmine: punisce chi resta fermo. Dopo graziaMs da fermo colpisce ogni intervalloMs;
 // ogni colpo fa "moltiplicatore" volte il danno del precedente.
