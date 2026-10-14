@@ -16,6 +16,9 @@ class ScenaPartita extends Phaser.Scene {
     this.frecceRimaste = FRECCE_FARETRA;
     this.fineRicarica = 0;        // quando finisce la ricarica in corso
     this.direzione = { x: 1, y: 0 }; // dove spara: sempre al contrario di dove cammina (all'inizio a destra)
+    this.movimento = { x: 0, y: 0 };    // direzione dei tasti premuti in questo momento
+    this.fineSchivata = 0;           // quando finisce la schivata in corso
+    this.dirSchivata = { x: 0, y: 0 };
 
     // --- Ostacoli: rettangoli grigi che non si muovono ---
     this.ostacoli = this.physics.add.staticGroup();
@@ -56,7 +59,7 @@ class ScenaPartita extends Phaser.Scene {
 
     // --- Tasti ---
     this.frecceTastiera = this.input.keyboard.createCursorKeys();
-    this.tasti = this.input.keyboard.addKeys('W,A,S,D,R');
+    this.tasti = this.input.keyboard.addKeys('W,A,S,D,R,SHIFT');
 
     // --- Interfaccia ---
     this.testoVita = this.add.text(16, 16, '', { fontSize: '20px', color: '#ffffff' });
@@ -64,6 +67,9 @@ class ScenaPartita extends Phaser.Scene {
     this.testoFrecce = this.add.text(16, 42, '', { fontSize: '20px', color: '#f2e6b8' });
     // Barra di ricarica sotto il giocatore, visibile solo mentre ricarica
     this.barraRicarica = this.add.rectangle(0, 0, 0, 4, 0xf2e6b8).setOrigin(0, 0.5).setVisible(false);
+    this.add.text(16, ALTEZZA - 30, 'WASD: muoviti   Shift: schivata (' + COSTO_SCHIVATA + ' frecce)', {
+      fontSize: '16px', color: '#8a8a99',
+    });
   }
 
   // update() viene eseguita OGNI fotogramma (circa 60 volte al secondo)
@@ -73,7 +79,14 @@ class ScenaPartita extends Phaser.Scene {
       return;
     }
 
-    this.muoviGiocatore();
+    // Durante la schivata i tasti di movimento non contano: si va dritti
+    const inSchivata = time < this.fineSchivata;
+    if (inSchivata) {
+      this.giocatore.body.setVelocity(this.dirSchivata.x * VELOCITA_SCHIVATA, this.dirSchivata.y * VELOCITA_SCHIVATA);
+    } else {
+      this.muoviGiocatore();
+      if (Phaser.Input.Keyboard.JustDown(this.tasti.SHIFT)) this.schiva(time);
+    }
 
     // Il mirino sta sempre dal lato in cui partono le frecce
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
@@ -92,6 +105,26 @@ class ScenaPartita extends Phaser.Scene {
     // Lampeggio mentre si è invulnerabili dopo un colpo
     const invulnerabile = time - this.ultimoColpo < INVULNERABILITA_MS;
     this.giocatore.setAlpha(invulnerabile && Math.floor(time / 80) % 2 === 0 ? 0.3 : 1);
+    if (time < this.fineSchivata) this.giocatore.setAlpha(0.5); // mezzo trasparente mentre schiva
+  }
+
+  // Scatto veloce che costa frecce
+  schiva(time) {
+    // Senza abbastanza frecce (o durante la ricarica) non si schiva
+    if (this.frecceRimaste < COSTO_SCHIVATA) {
+      this.testoFrecce.setColor('#ff6b6b'); // il contatore diventa rosso per un attimo
+      this.time.delayedCall(250, () => this.testoFrecce.setColor('#f2e6b8'));
+      return;
+    }
+
+    // Si schiva dove si sta andando; da fermo, nell'ultima direzione in cui si camminava
+    // (cioè al contrario di dove si spara)
+    const fermo = this.movimento.x === 0 && this.movimento.y === 0;
+    this.dirSchivata = fermo ? { x: -this.direzione.x, y: -this.direzione.y } : { ...this.movimento };
+    this.fineSchivata = time + DURATA_SCHIVATA_MS;
+
+    this.frecceRimaste -= COSTO_SCHIVATA;
+    if (this.frecceRimaste === 0) this.fineRicarica = time + RICARICA_MS; // faretra svuotata: si ricarica
   }
 
   // Muove il giocatore e restituisce true se si sta muovendo
@@ -110,6 +143,7 @@ class ScenaPartita extends Phaser.Scene {
       dy *= Math.SQRT1_2;
     }
 
+    this.movimento = { x: dx, y: dy };
     const inMovimento = dx !== 0 || dy !== 0;
     // Si spara alle proprie spalle: direzione opposta al movimento.
     // Da fermo resta l'ultima direzione, quindi si continua a sparare lì.
@@ -169,6 +203,7 @@ class ScenaPartita extends Phaser.Scene {
   subisciDanno(danno) {
     const adesso = this.time.now;
     if (this.morto || adesso - this.ultimoColpo < INVULNERABILITA_MS) return;
+    if (adesso < this.fineSchivata) return; // durante la schivata si è intoccabili
 
     this.ultimoColpo = adesso;
     this.vita = Math.max(0, this.vita - danno);

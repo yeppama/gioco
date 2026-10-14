@@ -15,11 +15,16 @@ const INVULNERABILITA_MS = 800; // dopo un colpo, per quanto non si subisce altr
 // Arco: spara sempre da solo, alle spalle del giocatore (al contrario di dove cammina).
 // Dopo un certo numero di frecce la faretra è vuota e si ricarica.
 const CADENZA_MS = 400;          // un colpo ogni 0,4 secondi
-const FRECCE_FARETRA = 20;       // frecce prima di dover ricaricare
+const FRECCE_FARETRA = 30;       // frecce prima di dover ricaricare
 const RICARICA_MS = 2000;        // durata della ricarica
 const VELOCITA_FRECCIA = 600;    // pixel al secondo
 const DANNO_FRECCIA = 10;
 const LATO_FRECCIA = 8;
+
+// Schivata (tasto Shift): uno scatto veloce che si paga in frecce
+const COSTO_SCHIVATA = 6;          // frecce consumate; con meno frecce non si schiva
+const VELOCITA_SCHIVATA = 700;     // pixel al secondo durante lo scatto
+const DURATA_SCHIVATA_MS = 180;    // durata dello scatto; in questo tempo non si subiscono danni
 
 // Nemici: ogni tipo ha i suoi valori
 const TIPI_NEMICO = {
