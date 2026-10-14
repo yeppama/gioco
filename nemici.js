@@ -50,8 +50,8 @@ function preparaNemico(scena, n, tipo, dati, molt) {
   n.exp = dati.exp;
   // Aggressività: dopo ogni boss i nemici sono più veloci e attaccano più spesso
   n.aggressivita = 1 + AGGRESSIVITA_PER_CICLO * scena.round.ciclo();
-  // La velocità cresce la metà della vita (sennò diventano imprendibili), più l'aggressività del ciclo
-  n.moltVelocita = (1 + (molt - 1) * 0.5) * n.aggressivita;
+  // Velocità: cresce a ogni round del ciclo, più l'aggressività dei cicli avanzati
+  n.moltVelocita = scena.round.moltiplicatoreVelocita() * n.aggressivita;
   n.moltDanno = molt;
   n.dannoContatto = Math.round(dati.danno * molt);
   n.fineStato = 0;

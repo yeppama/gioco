@@ -169,6 +169,8 @@ const ONDATE = {
   intervalloInizialeMs: 4000, // nel primo round di ogni ciclo un gruppo ogni 4 secondi
   riduzionePerRoundMs: 200,   // ogni round i gruppi arrivano un po' più spesso
   intervalloMinimoMs: 1800,
+  riduzioneMinimoPerCicloMs: 200, // dopo ogni boss i gruppi possono arrivare ancora più spesso
+  intervalloMinimoAssolutoMs: 900,
   gruppoMinimo: 2,            // nemici per gruppo all'inizio del ciclo
   gruppoMassimo: 5,
   maxNemiciInsieme: 20,       // mai più di così in campo
@@ -185,11 +187,13 @@ const COMPARSA_TIPI = [
 
 // Round speciali e difficoltà.
 // Un "ciclo" = i round fino al boss. Dentro un ciclo ogni round i nemici
-// hanno il 2% in più di vita, danno e velocità; dopo ogni boss si sale del 20%.
+// hanno il 10% in più di vita e danno e il 7% di velocità; dopo ogni boss si sale del 33%
+// e il ritmo delle comparse NON riparte da capo: continua ad aumentare.
 const OGNI_QUANTI_ROUND_BOSS = 10;
 const OGNI_QUANTI_ROUND_MINIBOSS = 7;  // se coincide con il boss, vince il boss
-const CRESCITA_PER_ROUND = 0.02;
-const CRESCITA_PER_CICLO = 0.35;      // vita e danno: +35% dopo ogni boss
+const CRESCITA_PER_ROUND = 0.10;      // vita e danno: +10% a ogni round (non riparte dopo il boss)
+const VELOCITA_PER_ROUND = 0.07;      // velocità: +7% a ogni round del ciclo
+const CRESCITA_PER_CICLO = 0.33;      // vita e danno: +33% dopo ogni boss
 const AGGRESSIVITA_PER_CICLO = 0.15;  // dopo ogni boss: +15% velocità, attacchi più frequenti e annunci più brevi
 
 // Boss (round 10, 20, 30...): 3 attacchi annunciati, a turno

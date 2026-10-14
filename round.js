@@ -46,8 +46,10 @@ class GestoreRound {
   }
 
   // Quanto sono più forti i nemici rispetto ai valori di config.js
+  // Vita e danno: +10% a ogni round (senza mai ripartire da capo) e +33% per ogni boss sconfitto
   moltiplicatore() {
-    return (1 + CRESCITA_PER_CICLO * this.ciclo()) * (1 + CRESCITA_PER_ROUND * (this.roundNelCiclo() - 1)) * this.moltExtra;
+    const round = Math.max(1, this.numero);
+    return (1 + CRESCITA_PER_ROUND * (round - 1)) * (1 + CRESCITA_PER_CICLO * this.ciclo()) * this.moltExtra;
   }
 
   // Dopo i 45 secondi i nemici rimasti accelerano sempre di più
@@ -81,9 +83,16 @@ class GestoreRound {
   }
 
   // Millisecondi tra un gruppo e il successivo in questo round
+  // Il ritmo continua ad aumentare anche dopo il boss (si conta il round assoluto)
   intervallo() {
-    const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.roundNelCiclo() - 1);
-    return Math.max(ms, ONDATE.intervalloMinimoMs);
+    const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.numero - 1);
+    const minimo = Math.max(ONDATE.intervalloMinimoAssolutoMs, ONDATE.intervalloMinimoMs - ONDATE.riduzioneMinimoPerCicloMs * this.ciclo());
+    return Math.max(ms, minimo);
+  }
+
+  // Velocità dei nemici in questo round: +7% a round dentro il ciclo
+  moltiplicatoreVelocita() {
+    return 1 + VELOCITA_PER_ROUND * (this.roundNelCiclo() - 1);
   }
 
   // --- Andamento del round ---
