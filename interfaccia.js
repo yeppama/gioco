@@ -39,8 +39,8 @@ class Interfaccia {
     scena.add.text(16, ALTEZZA - 28, aiuto, { fontSize: '15px', color: '#8a8a99' }).setDepth(20);
 
     if (scena.debug) {
-      scena.add.text(LARGHEZZA - 16, ALTEZZA - 28, 'DEBUG  L: livello  I: invincibile  N: round dopo', {
-        fontSize: '14px', color: '#ff6b6b',
+      scena.add.text(LARGHEZZA - 16, 14, 'DEBUG\nL: livello\nI: invincibile\nN: round dopo', {
+        fontSize: '14px', color: '#ff6b6b', align: 'right',
       }).setOrigin(1, 0).setDepth(20);
     }
   }
