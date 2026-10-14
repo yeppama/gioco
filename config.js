@@ -42,6 +42,7 @@ const DISTANZA_PARALLELE = 12;   // pixel tra frecce parallele (Freccia doppia)
 // Colpo caricato (Spazio o pulsante sul telefono): tenendo premuto l'arco smette
 // di sparare e mette da parte frecce dalla faretra; al rilascio partono tutte insieme
 const COLPO_CARICATO = {
+  sogliaMs: 200,           // bisogna tenere premuto almeno così prima che inizi a caricare
   intervalloMs: 300,       // ogni quanto si aggiunge una freccia alla carica
   massimo: 10,             // frecce al massimo in un colpo caricato
   apertura: 3,             // gradi tra una freccia e l'altra del colpo
@@ -50,8 +51,23 @@ const COLPO_CARICATO = {
   rallentamento: 0.6,      // mentre carichi ti muovi al 60%
 };
 
-// Joystick per il telefono
-const RAGGIO_JOYSTICK = 60;        // quanto si sposta il pomello dal centro, in pixel
+// Due pressioni di Spazio entro questo tempo = colpo onda
+const DOPPIO_SPAZIO_MS = 300;
+
+// Fulmine: punisce chi resta fermo. Dopo graziaMs da fermo colpisce ogni intervalloMs;
+// ogni colpo fa "moltiplicatore" volte il danno del precedente.
+// Muovendosi il contatore scende (più in fretta se si va veloci).
+const FULMINE = {
+  graziaMs: 1000,
+  intervalloMs: 1000,
+  dannoBase: 3,
+  moltiplicatore: 1.75,
+  caloAlSecondo: 1.5,   // livelli persi al secondo muovendosi a velocità base
+};
+
+// Overheal: a vita piena, le cure in più si accumulano; quando arrivano a una
+// vita intera (senza prendere danni nel frattempo) si guadagna uno scudo da un colpo.
+const OVERHEAL_SCUDI_MASSIMI = 5;
 
 // Schivata (tasto Shift): uno scatto veloce che si paga in frecce
 const COSTO_SCHIVATA = 6;          // frecce consumate; con meno frecce non si schiva
@@ -64,7 +80,11 @@ const PESI_RARITA = { comune: 10, rara: 4, leggendaria: 1 };
 // Benedizioni divine: solo dopo aver sconfitto un boss.
 // Round senza danni: premio a scelta tra vita, frecce e velocità.
 const RIPOSO_CURA = 0.2;   // la quarta opzione delle maledette: cura il 20% della vita
-const PREMIO = { cura: 0.3, frecce: 4, velocita: 0.05 };
+const PREMIO = { cura: 0.3, vitaMax: 0.1, frecce: 4, velocita: 0.1 };
+const PREMI_SALTATI_PER_MALEDETTA = 2; // saltando 2 premi si ottiene un potere maledetto
+
+// Orda che accompagna il boss: gruppi di nemici che arrivano insieme a lui
+const ORDA_BOSS = { gruppi: 2, nemiciPerGruppo: 4, extraPerCiclo: 1 };
 
 // Abilità difensive
 const INTERVALLO_RIGENERAZIONE_MS = 2000; // ogni quanto agisce Rigenerazione
@@ -87,6 +107,7 @@ const LIMITI = {
   cadenzaMinMs: 150,      // non si spara più spesso di così
   costoSchivataMin: 2,    // la schivata costa almeno 2 frecce
   vitaMaxMassima: 300,
+  faretraMassima: 200,    // mai più di 200 frecce nella faretra
 };
 
 // Esperienza: per salire dal livello 1 al 2 servono EXP_PRIMO_LIVELLO punti,
@@ -127,7 +148,8 @@ const COMPARSA_TIPI = [
 const OGNI_QUANTI_ROUND_BOSS = 10;
 const OGNI_QUANTI_ROUND_MINIBOSS = 7;  // se coincide con il boss, vince il boss
 const CRESCITA_PER_ROUND = 0.02;
-const CRESCITA_PER_CICLO = 0.20;
+const CRESCITA_PER_CICLO = 0.35;      // vita e danno: +35% dopo ogni boss
+const AGGRESSIVITA_PER_CICLO = 0.15;  // dopo ogni boss: +15% velocità, attacchi più frequenti e annunci più brevi
 
 // Boss (round 10, 20, 30...): 3 attacchi annunciati, a turno
 const BOSS = {
@@ -168,7 +190,7 @@ const CONSUMABILI = {
 // Più grandi, resistenti e "furbi": mirano dove stai andando, non dove sei.
 const ELITE = {
   dopoRound: 7,
-  vita: 3, velocita: 1.15, danno: 1.3, lato: 1.3, exp: 4,
+  vita: 6, velocita: 1.15, danno: 1.3, lato: 1.3, exp: 5,
   previsioneS: 0.45,    // quanto in avanti prevedono i tuoi movimenti, in secondi
   colore: 0xf1c40f,     // bordo dorato
 };

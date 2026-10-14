@@ -24,7 +24,7 @@ class Consumabili {
       const vicino = Phaser.Math.Distance.Between(s.x, s.y, g.x, g.y) < CONSUMABILI.raggio + LATO_GIOCATORE / 2 + 4;
       if (vicino) {
         const cura = Math.round(scena.stats.vitaMax * CONSUMABILI.cura);
-        scena.vita = Math.min(scena.stats.vitaMax, scena.vita + cura);
+        scena.cura(cura);
         this.scritta('+' + cura, s.x, s.y);
         s.finita = true;
       } else if (t >= s.scade) {

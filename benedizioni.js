@@ -48,12 +48,12 @@ const DIVINE = [
     id: 'luce', nome: 'Luce ristoratrice', max: 99,
     descrizione: () => 'Ti cura completamente',
     applica: () => {},
-    alPrendere: (scena) => { scena.vita = scena.stats.vitaMax; },
+    alPrendere: (scena) => { scena.cura(scena.stats.vitaMax); },
   },
   {
     id: 'vento', nome: 'Grazia del vento', max: 3,
-    descrizione: () => 'Ti muovi il 10% più veloce',
-    applica: (s, liv) => { s.velocita *= Math.pow(1.1, liv); },
+    descrizione: () => 'Ti muovi il 15% più veloce',
+    applica: (s, liv) => { s.velocita *= Math.pow(1.15, liv); },
   },
   {
     id: 'faretrabenedetta', nome: 'Faretra benedetta', max: 3,
@@ -80,9 +80,9 @@ const DIVINE = [
 const PREMI = [
   {
     id: 'premiovita', nome: 'Respiro', max: 999,
-    descrizione: () => 'Recuperi il ' + Math.round(PREMIO.cura * 100) + '% della vita',
-    applica: () => {},
-    alPrendere: (scena) => { scena.vita = Math.min(scena.stats.vitaMax, scena.vita + scena.stats.vitaMax * PREMIO.cura); },
+    descrizione: () => '+' + Math.round(PREMIO.vitaMax * 100) + '% vita massima e recuperi il ' + Math.round(PREMIO.cura * 100) + '% della vita',
+    applica: (s, liv) => { s.vitaMaxMolt *= Math.pow(1 + PREMIO.vitaMax, liv); },
+    alPrendere: (scena) => { scena.cura(scena.stats.vitaMax * PREMIO.cura); },
   },
   {
     id: 'premiofrecce', nome: 'Faretra ampia', max: 999,

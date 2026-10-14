@@ -40,6 +40,12 @@ const ABILITA = [
     applica: (s, liv) => { s.cadenzaMs *= Math.pow(0.85, liv); },
   },
 
+  {
+    id: 'manirapide', nome: 'Mani rapide', max: 3,
+    descrizione: () => 'La ricarica dura il 15% in meno',
+    applica: (s, liv) => { s.ricaricaMs *= Math.pow(0.85, liv); },
+  },
+
   // --- Elementali ed evocazioni ---
   {
     id: 'fuoco', nome: 'Frecce infuocate', max: 3,

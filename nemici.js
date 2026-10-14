@@ -48,7 +48,10 @@ function preparaNemico(scena, n, tipo, dati, molt) {
   n.vitaMax = Math.round(dati.vita * molt);
   n.vita = n.vitaMax;
   n.exp = dati.exp;
-  n.moltVelocita = 1 + (molt - 1) * 0.5;   // la velocità cresce la metà della vita (sennò diventano imprendibili)
+  // Aggressività: dopo ogni boss i nemici sono più veloci e attaccano più spesso
+  n.aggressivita = 1 + AGGRESSIVITA_PER_CICLO * scena.round.ciclo();
+  // La velocità cresce la metà della vita (sennò diventano imprendibili), più l'aggressività del ciclo
+  n.moltVelocita = (1 + (molt - 1) * 0.5) * n.aggressivita;
   n.moltDanno = molt;
   n.dannoContatto = Math.round(dati.danno * molt);
   n.fineStato = 0;
@@ -126,7 +129,7 @@ function aggiornaCaricatore(scena, n, t) {
       const angolo = Phaser.Math.Angle.Between(n.x, n.y, mira.x, mira.y);
       n.dirCarica = { x: Math.cos(angolo), y: Math.sin(angolo) };
       n.stato = 'prepara';
-      n.fineStato = t + d.preparazioneMs / furia; // infuriato si prepara più in fretta
+      n.fineStato = t + d.preparazioneMs / (furia * n.aggressivita); // infuriato (o nei cicli avanzati) si prepara più in fretta
     }
   } else if (n.stato === 'prepara') {
     n.body.setVelocity(0, 0);
@@ -172,7 +175,7 @@ function aggiornaTiratore(scena, n, t) {
       const angolo = Phaser.Math.Angle.Between(n.x, n.y, mira.x, mira.y);
       sparaProiettileDa(scena, n.x, n.y, angolo, d.velocitaProiettile, Math.round(d.dannoProiettile * n.moltDanno));
       n.stato = 'muove';
-      n.prossimoTiro = t + d.cadenzaMs / furia;
+      n.prossimoTiro = t + d.cadenzaMs / (furia * n.aggressivita);
     }
     return;
   }
@@ -219,7 +222,7 @@ function aggiornaMortaio(scena, n, t) {
   if (t >= n.prossimoTiro && distanza < ideale + 250) {
     const mira = bersaglioDi(scena, n);
     creaZona(scena, mira.x, mira.y, d.raggio, d.ritardoMs, Math.round(d.dannoEsplosione * n.moltDanno));
-    n.prossimoTiro = t + d.cadenzaMs / furia;
+    n.prossimoTiro = t + d.cadenzaMs / (furia * n.aggressivita);
     // Piccolo rinculo visivo
     n.setFillStyle(0xffffff);
     scena.time.delayedCall(80, () => { if (n.active) n.setFillStyle(n.colore); });

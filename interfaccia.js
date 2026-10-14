@@ -43,16 +43,16 @@ class Interfaccia {
     // Barra di ricarica sotto il giocatore (questa invece si muove con lui)
     this.barraRicarica = scena.add.rectangle(0, 0, 0, 4, 0xf2e6b8).setOrigin(0, 0.5).setDepth(20).setVisible(false);
 
-    // Promemoria dei comandi: diverso su telefono e su PC
-    const touch = scena.sys.game.device.input.touch;
-    const aiuto = touch
-      ? 'Sinistra: schivata   Destra: joystick'
-      : 'WASD muoviti · Shift schivata · Spazio carica · Ctrl ricarica · Esc pausa';
-    scena.add.text(touch ? 130 : 16, ALTEZZA - 28, aiuto, { fontSize: '15px', color: '#8a8a99' })
-      .setDepth(20).setScrollFactor(0);
+    // Contatori: overheal e round senza danni, in alto a destra
+    this.testoOverheal = testo(LARGHEZZA - 16, 14, '#6fd36f', '16px').setOrigin(1, 0);
+    this.testoPerfetti = testo(LARGHEZZA - 16, 36, '#f7d774', '16px').setOrigin(1, 0);
+
+    // Promemoria dei comandi
+    const aiuto = 'WASD muoviti · Shift schivata · Spazio carica (2 volte: onda) · Ctrl ricarica · Esc pausa';
+    scena.add.text(16, ALTEZZA - 28, aiuto, { fontSize: '14px', color: '#8a8a99' }).setDepth(20).setScrollFactor(0);
 
     if (scena.debug) {
-      scena.add.text(LARGHEZZA - 16, 64, 'DEBUG\nL: livello\nI: invincibile\nN: chiudi round\nB: boss  M: mini boss', {
+      scena.add.text(LARGHEZZA - 16, 66, 'DEBUG\nL: livello\nI: invincibile\nN: chiudi round\nB: boss  M: mini boss', {
         fontSize: '14px', color: '#ff6b6b', align: 'right',
       }).setOrigin(1, 0).setDepth(20).setScrollFactor(0);
     }
@@ -64,6 +64,8 @@ class Interfaccia {
     const arco = s.arco;
     this.testoVita.setText('Vita: ' + Math.ceil(s.vita) + ' / ' + s.stats.vitaMax + (s.invincibileDebug ? '  (invincibile)' : ''));
     this.testoLivello.setText('Livello ' + s.livello);
+    this.testoOverheal.setText('Overheal ' + Math.floor(s.overheal) + '/' + s.stats.vitaMax + (s.scudiOverheal > 0 ? '  ·  Scudi ' + s.scudiOverheal : ''));
+    this.testoPerfetti.setText('Round senza danni: ' + s.roundSenzaDanni);
     this.barraExp.setSize(LARGHEZZA * Phaser.Math.Clamp(s.exp / s.expNecessaria, 0, 1), 6);
 
     // Round e timer
@@ -122,7 +124,7 @@ class Interfaccia {
       .sort((a, b) => b[1] - a[1])
       .map(([fonte, danno]) => fonte + ': ' + Math.round(danno) + ' (' + Math.round(danno / totale * 100) + '%)');
 
-    const comeRicominciare = s.sys.game.device.input.touch ? 'Tocca per ricominciare' : 'Premi R per ricominciare';
+    const comeRicominciare = 'Premi R per ricominciare';
     const righe = [
       'SEI MORTO',
       '',

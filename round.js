@@ -54,9 +54,9 @@ class GestoreRound {
 
   // Un gruppo di nemici vicini tra loro, in un punto fuori dallo schermo.
   // I gruppi crescono man mano che si avanza nel ciclo.
-  generaGruppo(nemiciVivi) {
+  generaGruppo(nemiciVivi, grandezzaFissa) {
     const posti = ONDATE.maxNemiciInsieme - nemiciVivi;
-    const grandezza = Math.min(posti, ONDATE.gruppoMassimo, ONDATE.gruppoMinimo + Math.floor((this.roundNelCiclo() - 1) / 3));
+    const grandezza = grandezzaFissa || Math.min(posti, ONDATE.gruppoMassimo, ONDATE.gruppoMinimo + Math.floor((this.roundNelCiclo() - 1) / 3));
     if (grandezza <= 0) return;
     const g = this.scena.giocatore;
     const centro = this.scena.arena.puntoComparsa(g.x, g.y, ONDATE.distanzaComparsaMin, ONDATE.distanzaComparsaMax);
@@ -128,6 +128,9 @@ class GestoreRound {
 
     if (this.tipo === 'boss') {
       generaBoss(this.scena, 'boss');
+      // Il boss non arriva da solo: lo accompagna un'orda
+      const quanti = ORDA_BOSS.nemiciPerGruppo + ORDA_BOSS.extraPerCiclo * this.ciclo();
+      for (let i = 0; i < ORDA_BOSS.gruppi; i++) this.generaGruppo(0, quanti);
       this.scena.interfaccia.mostraBanner(BOSS.nome);
     } else if (this.tipo === 'miniboss') {
       generaBoss(this.scena, 'miniboss');

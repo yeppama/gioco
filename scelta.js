@@ -8,7 +8,7 @@
 //  - tipo: 'abilita', 'maledetta' o 'divina' (cambia i colori)
 //  - opzioni: [{ id, nome, livello, descrizione }]
 //  - alScegliere: funzione chiamata con l'id scelto
-// Si sceglie con il mouse, con il dito o con i tasti 1, 2, 3.
+// Si sceglie con il mouse o con i tasti 1, 2, 3 (4 = Riposo o Salta).
 // ============================================================
 
 class ScenaScelta extends Phaser.Scene {
@@ -79,11 +79,23 @@ class ScenaScelta extends Phaser.Scene {
         .on('pointerdown', () => this.scegli('riposo'));
     }
 
-    // Tasti 1, 2, 3 (e 4 per riposare)
+    // Al posto di un premio si può saltare: ogni tot premi saltati arriva un potere maledetto (tasto 4)
+    if (this.dati.tipo === 'premio') {
+      const saltati = this.dati.premiSaltati || 0;
+      this.add.text(LARGHEZZA / 2, 500, '4 · Salta (' + saltati + '/' + PREMI_SALTATI_PER_MALEDETTA + ' per un potere maledetto)', {
+        fontSize: '20px', color: '#ff6b6b',
+      })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.scegli('salta'));
+    }
+
+    // Tasti 1, 2, 3 (e 4 per riposare o saltare)
     this.input.keyboard.on('keydown', (evento) => {
       const numero = parseInt(evento.key, 10);
       if (numero >= 1 && numero <= opzioni.length) this.scegli(opzioni[numero - 1].id);
       if (numero === 4 && this.dati.tipo === 'maledetta') this.scegli('riposo');
+      if (numero === 4 && this.dati.tipo === 'premio') this.scegli('salta');
     });
   }
 

@@ -30,7 +30,12 @@ class ScenaPartita extends Phaser.Scene {
     this.expNecessaria = EXP_PRIMO_LIVELLO;
     // Scelte da mostrare appena possibile, in ordine. All'inizio si sceglie la prima abilità.
     this.codaScelte = [{ tipo: 'abilita', titolo: 'Scegli la tua prima abilità' }];
-    this.dannoNelRound = false;  // per la benedizione divina
+    this.dannoNelRound = false;  // per il premio del round senza danni
+    this.roundSenzaDanni = 0;    // quanti round di fila senza danni
+    this.premiSaltati = 0;       // ogni PREMI_SALTATI_PER_MALEDETTA premi saltati = un potere maledetto
+    // Overheal: cure in più a vita piena; a una vita intera si guadagna uno scudo
+    this.overheal = 0;
+    this.scudiOverheal = 0;
     this.bossAttivo = null;      // il boss o mini boss in campo (per la sua barra della vita)
 
     // Statistiche per il riepilogo di fine run
@@ -91,12 +96,13 @@ class ScenaPartita extends Phaser.Scene {
 
     // --- Comandi, round, interfaccia, evocazioni ---
     this.lame = new LameOrbitanti(this);
+    this.fulmine = new Fulmine(this);
     this.consumabili = new Consumabili(this);
     this.controlli = new Controlli(this);
     this.round = new GestoreRound(this);
     this.interfaccia = new Interfaccia(this);
 
-    // Pausa automatica quando si cambia scheda o il telefono si blocca
+    // Pausa automatica quando si cambia scheda
     // (non in debug, dove il pannello di prova perde spesso il focus)
     if (!this.debug) {
       const pausaAutomatica = () => { this.controlli.richiestaPausa = true; };
@@ -130,7 +136,8 @@ class ScenaPartita extends Phaser.Scene {
 
     // Avanza l'orologio della partita (massimo 50 ms per volta,
     // così se il browser si blocca un attimo non "salta" tutto in avanti)
-    this.tempo += Math.min(delta, 50);
+    const passo = Math.min(delta, 50);
+    this.tempo += passo;
     const t = this.tempo;
 
     if (this.debug) this.gestisciDebug(t);
@@ -152,6 +159,7 @@ class ScenaPartita extends Phaser.Scene {
     if (this.controlli.ricaricaManuale()) this.arco.ricaricaManuale(t);
     this.arco.aggiorna(t, this.controlli.caricaPremuta());
     this.gestisciDifese(t);
+    this.fulmine.aggiorna(t, passo);
     this.lame.aggiorna(t);
     this.consumabili.aggiorna(t);
     this.round.aggiorna(t);
@@ -250,14 +258,28 @@ class ScenaPartita extends Phaser.Scene {
     // Rigenerazione
     if (t >= this.prossimaRigenerazione) {
       this.prossimaRigenerazione = t + INTERVALLO_RIGENERAZIONE_MS;
-      if (this.stats.rigenerazione > 0 && !this.stats.rigenerazioneBloccata) {
-        this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.rigenerazione);
-      }
+      if (this.stats.rigenerazione > 0 && !this.stats.rigenerazioneBloccata) this.cura(this.stats.rigenerazione);
     }
     // Scudo spirituale: torna pronto dopo il suo tempo di ricarica
     if (this.stats.scudoMs > 0 && !this.scudoPronto && t >= this.prossimoScudo) this.scudoPronto = true;
     this.aloneScudo.setVisible(this.stats.scudoMs > 0 && this.scudoPronto);
     this.aloneScudo.setPosition(this.giocatore.x, this.giocatore.y);
+  }
+
+  // Ogni cura passa da qui: quello che supera la vita massima va nell'overheal
+  cura(quantita) {
+    const spazio = this.stats.vitaMax - this.vita;
+    this.vita = Math.min(this.stats.vitaMax, this.vita + quantita);
+    const avanzo = quantita - Math.max(0, spazio);
+    if (avanzo <= 0) return;
+    this.overheal += avanzo;
+    // Una vita intera di cure in più (senza danni nel mezzo) = uno scudo da un colpo
+    while (this.overheal >= this.stats.vitaMax && this.scudiOverheal < OVERHEAL_SCUDI_MASSIMI) {
+      this.overheal -= this.stats.vitaMax;
+      this.scudiOverheal++;
+      this.interfaccia.mostraBanner('Scudo di overheal!');
+    }
+    if (this.scudiOverheal >= OVERHEAL_SCUDI_MASSIMI) this.overheal = Math.min(this.overheal, this.stats.vitaMax);
   }
 
   subisciDanno(danno) {
@@ -275,8 +297,17 @@ class ScenaPartita extends Phaser.Scene {
       return;
     }
 
+    // Poi gli scudi dell'overheal, uno per colpo
+    if (this.scudiOverheal > 0) {
+      this.scudiOverheal--;
+      this.ultimoColpo = t;
+      this.cameras.main.flash(120, 111, 211, 111);
+      return;
+    }
+
     this.ultimoColpo = t;
     this.dannoNelRound = true;
+    this.overheal = 0; // un danno vero azzera l'accumulo dell'overheal
     this.vita = Math.max(0, this.vita - danno);
     this.cameras.main.shake(100, 0.005); // piccolo scossone dello schermo
     if (this.vita === 0) this.muori();
@@ -298,8 +329,13 @@ class ScenaPartita extends Phaser.Scene {
   fineRound(numero, eraBoss) {
     // Benedizione divina: solo e soltanto dopo aver sconfitto un boss
     if (eraBoss) this.codaScelte.push({ tipo: 'divina', titolo: 'Il boss è caduto: benedizione divina' });
-    // Round senza danni: un premio a scelta
-    if (!this.dannoNelRound) this.codaScelte.push({ tipo: 'premio', titolo: 'Round senza danni!' });
+    // Round senza danni: un premio a scelta (e il contatore sale)
+    if (!this.dannoNelRound) {
+      this.roundSenzaDanni++;
+      this.codaScelte.push({ tipo: 'premio', titolo: 'Round senza danni!' });
+    } else {
+      this.roundSenzaDanni = 0;
+    }
   }
 
   // Chiamata quando muore il mini boss
@@ -318,9 +354,17 @@ class ScenaPartita extends Phaser.Scene {
       titolo: voce.titolo,
       tipo: voce.tipo,
       opzioni,
+      premiSaltati: this.premiSaltati,
       alScegliere: (id) => {
         if (id === 'riposo') {
-          this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.vitaMax * RIPOSO_CURA);
+          this.cura(this.stats.vitaMax * RIPOSO_CURA);
+        } else if (id === 'salta') {
+          // Premi saltati: dopo un certo numero arriva un potere maledetto
+          this.premiSaltati++;
+          if (this.premiSaltati >= PREMI_SALTATI_PER_MALEDETTA) {
+            this.premiSaltati = 0;
+            this.codaScelte.push({ tipo: 'maledetta', titolo: 'Hai rinunciato ai premi: potere maledetto' });
+          }
         } else if (id) {
           this.prendiAbilita(id);
         }
@@ -392,6 +436,7 @@ class ScenaPartita extends Phaser.Scene {
     this.aloneScudo.setVisible(false);
     this.arco.nascondi();
     this.lame.nascondi();
+    this.fulmine.nascondi();
     this.interfaccia.nascondiPerMorte();
     this.controlli.azzeraTocchi();
     this.interfaccia.mostraRiepilogo();

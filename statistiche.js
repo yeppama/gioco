@@ -49,6 +49,6 @@ function calcolaStatistiche(livelli) {
   s.cadenzaMs = Math.max(s.cadenzaMs, LIMITI.cadenzaMinMs);
   s.costoSchivata = Math.max(s.costoSchivata, LIMITI.costoSchivataMin);
   s.vitaMax = Math.min(s.vitaMax, LIMITI.vitaMaxMassima);
-  s.frecceFaretra = Math.round(s.frecceFaretra);
+  s.frecceFaretra = Math.min(Math.round(s.frecceFaretra), LIMITI.faretraMassima);
   return s;
 }
