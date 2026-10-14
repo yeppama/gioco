@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gioco - Fase 1</title>
+  <style>
+    /* Sfondo scuro e gioco centrato nella pagina */
+    body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  </style>
+  <!-- Phaser: la libreria che gestisce grafica, input e ciclo di gioco -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/4.1.0/phaser.min.js"></script>
+</head>
+<body>
+  <!-- L'ordine conta: prima i numeri, poi la scena, poi l'avvio -->
+  <script src="config.js"></script>
+  <script src="partita.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

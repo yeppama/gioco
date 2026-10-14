@@ -1,0 +1,16 @@
+// ============================================================
+// MAIN - avvia il gioco. I numeri sono in config.js,
+// la logica della partita in partita.js
+// ============================================================
+
+new Phaser.Game({
+  type: Phaser.AUTO,         // Phaser sceglie da solo il modo migliore di disegnare
+  width: LARGHEZZA,
+  height: ALTEZZA,
+  backgroundColor: '#1d1d24',
+  physics: {
+    default: 'arcade',       // fisica semplice: velocità e collisioni tra rettangoli
+    arcade: { debug: false }, // metti true per vedere i bordi dei corpi fisici
+  },
+  scene: [ScenaPartita],
+});
