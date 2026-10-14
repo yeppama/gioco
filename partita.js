@@ -13,6 +13,8 @@ class ScenaPartita extends Phaser.Scene {
     this.morto = false;
     this.ultimoColpo = -Infinity; // momento dell'ultimo danno subito
     this.prossimoSparo = 0;       // da quando si può sparare di nuovo
+    this.frecceRimaste = FRECCE_FARETRA;
+    this.fineRicarica = 0;        // quando finisce la ricarica in corso
     this.direzione = { x: 1, y: 0 }; // dove guarda il giocatore (all'inizio a destra)
 
     // --- Ostacoli: rettangoli grigi che non si muovono ---
@@ -59,6 +61,9 @@ class ScenaPartita extends Phaser.Scene {
     // --- Interfaccia ---
     this.testoVita = this.add.text(16, 16, '', { fontSize: '20px', color: '#ffffff' });
     this.aggiornaTestoVita();
+    this.testoFrecce = this.add.text(16, 42, '', { fontSize: '20px', color: '#f2e6b8' });
+    // Barra di ricarica sotto il giocatore, visibile solo mentre ricarica
+    this.barraRicarica = this.add.rectangle(0, 0, 0, 4, 0xf2e6b8).setOrigin(0, 0.5).setVisible(false);
   }
 
   // update() viene eseguita OGNI fotogramma (circa 60 volte al secondo)
@@ -68,16 +73,12 @@ class ScenaPartita extends Phaser.Scene {
       return;
     }
 
-    const inMovimento = this.muoviGiocatore();
+    this.muoviGiocatore();
 
     // Il mirino sta sempre davanti al giocatore
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
 
-    // Da fermo si spara, a intervalli regolari
-    if (!inMovimento && time >= this.prossimoSparo) {
-      this.spara();
-      this.prossimoSparo = time + CADENZA_MS;
-    }
+    this.gestisciArco(time);
 
     // Nemici: prima si aggiorna la mappa dei percorsi, poi ognuno si muove
     this.flowField.aggiorna(this.giocatore.x, this.giocatore.y);
@@ -114,6 +115,32 @@ class ScenaPartita extends Phaser.Scene {
 
     this.giocatore.body.setVelocity(dx * VELOCITA, dy * VELOCITA);
     return inMovimento;
+  }
+
+  // Spara da solo a intervalli regolari; a faretra vuota ricarica
+  gestisciArco(time) {
+    const inRicarica = this.frecceRimaste === 0;
+
+    if (inRicarica && time >= this.fineRicarica) {
+      this.frecceRimaste = FRECCE_FARETRA; // ricarica finita
+    } else if (!inRicarica && time >= this.prossimoSparo) {
+      this.spara();
+      this.frecceRimaste--;
+      this.prossimoSparo = time + CADENZA_MS;
+      if (this.frecceRimaste === 0) this.fineRicarica = time + RICARICA_MS;
+    }
+
+    // Interfaccia: contatore e barra di ricarica
+    if (this.frecceRimaste === 0) {
+      const avanzamento = 1 - (this.fineRicarica - time) / RICARICA_MS; // da 0 a 1
+      this.testoFrecce.setText('Ricarica...');
+      this.barraRicarica.setVisible(true);
+      this.barraRicarica.setPosition(this.giocatore.x - LATO_GIOCATORE / 2, this.giocatore.y + LATO_GIOCATORE / 2 + 8);
+      this.barraRicarica.setSize(LATO_GIOCATORE * Phaser.Math.Clamp(avanzamento, 0, 1), 4);
+    } else {
+      this.testoFrecce.setText('Frecce: ' + this.frecceRimaste + ' / ' + FRECCE_FARETRA);
+      this.barraRicarica.setVisible(false);
+    }
   }
 
   // Le frecce non vengono distrutte: si riusano (più veloce con tante frecce)
@@ -156,6 +183,7 @@ class ScenaPartita extends Phaser.Scene {
     this.giocatore.setAlpha(1);
     this.giocatore.setFillStyle(0x333344); // il giocatore diventa grigio
     this.mirino.setVisible(false);
+    this.barraRicarica.setVisible(false);
 
     this.add.text(LARGHEZZA / 2, ALTEZZA / 2, 'SEI MORTO\nPremi R per ricominciare', {
       fontSize: '32px', color: '#ffffff', align: 'center',
