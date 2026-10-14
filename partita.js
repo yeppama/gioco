@@ -37,6 +37,11 @@ class ScenaPartita extends Phaser.Scene {
     this.overheal = 0;
     this.scudiOverheal = 0;
     this.bossAttivo = null;      // il boss o mini boss in campo (per la sua barra della vita)
+    // Benedizioni con regole speciali
+    this.seteBonus = 0;          // Sete di battaglia: danno in più accumulato in questo round
+    this.secondaVitaUsata = false;
+    this.invisibileFino = 0;     // Ombra lenta: fino a quando i nemici non ti vedono
+    this.puntoVisto = { x: 0, y: 0 }; // dove i nemici credono che tu sia
 
     // Statistiche per il riepilogo di fine run
     this.danniPerFonte = {};
@@ -96,6 +101,7 @@ class ScenaPartita extends Phaser.Scene {
 
     // --- Comandi, round, interfaccia, evocazioni ---
     this.lame = new LameOrbitanti(this);
+    this.scia = new SciaVento(this);
     this.fulmine = new Fulmine(this);
     this.consumabili = new Consumabili(this);
     this.controlli = new Controlli(this);
@@ -163,12 +169,14 @@ class ScenaPartita extends Phaser.Scene {
     this.fulmine.aggiorna(t, passo);
     if (this.arena.terrenoIn(this.giocatore.x, this.giocatore.y) === 'lava') this.subisciDanno(TERRENI.lavaDanno);
     this.lame.aggiorna(t);
+    this.scia.aggiorna(t);
     this.consumabili.aggiorna(t);
     this.round.aggiorna(t);
     aggiornaZone(this, t);
 
     // Nemici: prima si aggiorna la mappa dei percorsi, poi ognuno si muove
-    this.flowField.aggiorna(this.giocatore.x, this.giocatore.y);
+    const visto = this.vista();
+    this.flowField.aggiorna(visto.x, visto.y);
     for (const n of this.nemici.getChildren().slice()) aggiornaNemico(this, n, t);
 
     this.arco.controllaBordi();
@@ -180,6 +188,7 @@ class ScenaPartita extends Phaser.Scene {
     const invulnerabile = t - this.ultimoColpo < INVULNERABILITA_MS;
     this.giocatore.setAlpha(invulnerabile && Math.floor(t / 80) % 2 === 0 ? 0.3 : 1);
     if (t < this.fineSchivata) this.giocatore.setAlpha(0.5);
+    if (t < this.invisibileFino) this.giocatore.setAlpha(0.25); // Ombra lenta: quasi invisibile
 
     this.interfaccia.aggiorna(t);
   }
@@ -196,7 +205,11 @@ class ScenaPartita extends Phaser.Scene {
 
     // Mentre carichi il colpo ti muovi più lento; nei rovi anche
     const nelRovi = this.arena.terrenoIn(this.giocatore.x, this.giocatore.y) === 'rovi';
-    const velocita = this.stats.velocita
+    // Faretra pesante: lento solo finché la faretra è più che mezza piena
+    const faretraPesante = this.arco.frecceRimaste > this.stats.frecceFaretra / 2 ? this.stats.velocitaSePiena : 1;
+    // Calice: ogni scudo overheal attivo ti fa andare più veloce
+    const calice = 1 + this.stats.velocitaPerScudo * this.scudiOverheal;
+    const velocita = this.stats.velocita * faretraPesante * calice
       * (this.arco.staCaricando ? COLPO_CARICATO.rallentamento : 1)
       * (nelRovi ? TERRENI.roviRallentamento : 1);
     this.giocatore.body.setVelocity(dx * velocita, dy * velocita);
@@ -204,10 +217,20 @@ class ScenaPartita extends Phaser.Scene {
 
   // Scatto veloce che costa frecce
   schiva(t) {
-    // Senza abbastanza frecce (o durante la ricarica) non si schiva
-    if (!this.arco.consuma(this.stats.costoSchivata, t)) {
+    if (this.stats.schivataDiVita > 0) {
+      // Corpo di cenere: si paga in vita (mai fino a morire), anche durante la ricarica
+      const costo = this.stats.vitaMax * this.stats.schivataDiVita;
+      if (this.vita <= costo) return;
+      this.vita -= costo;
+    } else if (!this.arco.consuma(this.stats.costoSchivata, t)) {
+      // Senza abbastanza frecce (o durante la ricarica) non si schiva
       this.interfaccia.lampeggiaFrecce();
       return;
+    }
+    // Ombra lenta: i nemici restano a guardare il punto da cui sei partito
+    if (this.stats.invisibileMs > 0) {
+      this.puntoVisto = { x: this.giocatore.x, y: this.giocatore.y };
+      this.invisibileFino = t + DURATA_SCHIVATA_MS + this.stats.invisibileMs;
     }
     // Si schiva dove si sta andando; da fermo, nell'ultima direzione in cui si camminava
     const fermo = this.movimento.x === 0 && this.movimento.y === 0;
@@ -217,10 +240,49 @@ class ScenaPartita extends Phaser.Scene {
 
   // ---------------------------------------------------------- DANNI AI NEMICI
 
-  // Danno di una freccia in questo momento (Ultimo respiro lo raddoppia a vita bassa)
+  // Danno di una freccia in questo momento
+  // (Ultimo respiro lo raddoppia a vita bassa, Sete di battaglia cresce con le uccisioni)
   dannoFreccia() {
-    const vitaBassa = this.vita < this.stats.vitaMax * 0.3;
-    return this.stats.danno * (this.stats.ultimoRespiro && vitaBassa ? 2 : 1);
+    const ultimo = this.vitaCritica() ? BENEDIZIONI.ultimorespiro.danno : 1;
+    return this.stats.danno * ultimo * (1 + this.seteBonus);
+  }
+
+  // Ultimo respiro attivo e vita sotto la soglia
+  vitaCritica() {
+    return this.stats.ultimoRespiro && this.vita < this.stats.vitaMax * BENEDIZIONI.ultimorespiro.soglia;
+  }
+
+  // Dove i nemici credono che tu sia: di solito dove sei, ma con Ombra lenta
+  // dopo una schivata guardano il punto da cui sei partito
+  vista() {
+    if (this.tempo >= this.invisibileFino) return this.giocatore;
+    return { x: this.puntoVisto.x, y: this.puntoVisto.y, body: { velocity: { x: 0, y: 0 } } };
+  }
+
+  // Chiamata da nemici.js a ogni uccisione: effetti delle benedizioni
+  alUccidere() {
+    // Patto di sangue: ogni uccisione costa vita (ma non uccide mai)
+    if (this.stats.vitaPerUccisione > 0) this.vita = Math.max(1, this.vita - this.stats.vitaPerUccisione);
+    // Faretra benedetta: frecce restituite
+    this.arco.restituisci(this.stats.frecceUccisione);
+    // Sete di battaglia: danno in più fino a fine round
+    if (this.stats.setePerUccisione > 0) {
+      this.seteBonus = Math.min(BENEDIZIONI.setebattaglia.dannoMassimo, this.seteBonus + this.stats.setePerUccisione);
+    }
+  }
+
+  // Ricarica sacra: i nemici vicini (non i boss) vengono spinti via
+  respingiNemici(t) {
+    const R = BENEDIZIONI.ricaricasacra;
+    const g = this.giocatore;
+    const onda = this.add.circle(g.x, g.y, R.raggioSpinta, 0xf7d774, 0.15).setStrokeStyle(2, 0xf7d774, 0.7);
+    this.time.delayedCall(180, () => onda.destroy());
+    for (const n of this.nemici.getChildren()) {
+      if (n.eBoss || Phaser.Math.Distance.Between(g.x, g.y, n.x, n.y) > R.raggioSpinta) continue;
+      const a = Phaser.Math.Angle.Between(g.x, g.y, n.x, n.y);
+      n.body.setVelocity(Math.cos(a) * R.forzaSpinta, Math.sin(a) * R.forzaSpinta);
+      n.spintaFino = t + R.durataSpintaMs;
+    }
   }
 
   // Frecce infuocate e di brina
@@ -263,7 +325,7 @@ class ScenaPartita extends Phaser.Scene {
     // Rigenerazione
     if (t >= this.prossimaRigenerazione) {
       this.prossimaRigenerazione = t + INTERVALLO_RIGENERAZIONE_MS;
-      if (this.stats.rigenerazione > 0 && !this.stats.rigenerazioneBloccata) this.cura(this.stats.rigenerazione);
+      if (this.stats.rigenerazione > 0) this.cura(this.stats.rigenerazione);
     }
     // Scudo spirituale: torna pronto dopo il suo tempo di ricarica
     if (this.stats.scudoMs > 0 && !this.scudoPronto && t >= this.prossimoScudo) this.scudoPronto = true;
@@ -273,6 +335,9 @@ class ScenaPartita extends Phaser.Scene {
 
   // Ogni cura passa da qui: quello che supera la vita massima va nell'overheal
   cura(quantita) {
+    // Ultimo respiro: a vita critica nessuna cura, altrimenti valgono meno
+    if (this.vitaCritica()) return;
+    quantita *= this.stats.cureMolt;
     const spazio = this.stats.vitaMax - this.vita;
     this.vita = Math.min(this.stats.vitaMax, this.vita + quantita);
     const avanzo = quantita - Math.max(0, spazio);
@@ -315,6 +380,15 @@ class ScenaPartita extends Phaser.Scene {
     this.overheal = 0; // un danno vero azzera l'accumulo dell'overheal
     this.vita = Math.max(0, this.vita - danno);
     this.cameras.main.shake(100, 0.005); // piccolo scossone dello schermo
+    if (this.vita === 0 && this.stats.secondaVita && !this.secondaVitaUsata) {
+      // Seconda vita: una volta per partita si torna in piedi
+      this.secondaVitaUsata = true;
+      this.vita = Math.round(this.stats.vitaMax * BENEDIZIONI.secondavita.vita);
+      this.ultimoColpo = t + BENEDIZIONI.secondavita.invulnerabileMs - INVULNERABILITA_MS; // un attimo per scappare
+      this.cameras.main.flash(300, 247, 215, 116);
+      this.interfaccia.mostraBanner(tr('b.secondaVita'));
+      return;
+    }
     if (this.vita === 0) this.muori();
   }
 
@@ -435,6 +509,7 @@ class ScenaPartita extends Phaser.Scene {
     this.giocatore.body.reset(this.arena.l / 2, this.arena.a / 2);
     this.arco.disattivaTutte();
     this.consumabili.svuota();
+    this.scia.svuota();
     svuotaZone(this);
   }
 
@@ -467,6 +542,7 @@ class ScenaPartita extends Phaser.Scene {
     this.aloneScudo.setVisible(false);
     this.arco.nascondi();
     this.lame.nascondi();
+    this.scia.svuota();
     this.fulmine.nascondi();
     this.interfaccia.nascondiPerMorte();
     this.controlli.azzeraTocchi();

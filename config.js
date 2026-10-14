@@ -124,6 +124,31 @@ const RIPOSO_CURA = 0.2;   // la quarta opzione delle maledette: cura il 20% del
 const PREMIO = { cura: 0.3, vitaMax: 0.1, frecce: 4, velocita: 0.1 };
 const PREMI_SALTATI_PER_MALEDETTA = 2; // saltando 2 premi si ottiene un potere maledetto
 
+// Numeri delle benedizioni (maledette e divine), una voce per benedizione
+const BENEDIZIONI = {
+  // --- Maledette ---
+  patto: { danno: 1.5, vitaPerUccisione: 1 },                 // ogni uccisione costa 1 vita (non uccide mai)
+  furiacieca: { cadenza: 0.75, colpiACaso: 0.5 },             // metà delle frecce parte in una direzione a caso
+  faretrapesante: { frecce: 15, velocitaSePiena: 0.8 },       // lento solo con più di metà faretra
+  occhidibrace: { exp: 1.35, velocitaNemici: 1.2, vitaNemici: 1.2 },
+  miraossessiva: { raggio: 300, cadenza: 1.25, vitaMax: 0.85 }, // cadenza 1.25 = spari il 25% più piano
+  ultimorespiro: { soglia: 0.3, danno: 2, cure: 0.5 },        // sotto la soglia nessuna cura, sopra cure dimezzate
+  pattofulmine: { graziaMs: 500, raggio: 130, moltDannoNemici: 4 }, // il fulmine colpisce anche i nemici vicini
+  ombralenta: { costoSchivata: 2, invisibileMs: 1000 },       // dopo la schivata i nemici ti perdono di vista
+  setebattaglia: { dannoPerUccisione: 0.02, dannoMassimo: 0.4, intervalloOndate: 0.75 },
+  corpocenere: { vitaPerSchivata: 0.03 },                     // la schivata costa vita invece di frecce
+  // --- Divine ---
+  luce: { scudi: 1 },                                         // cura completa + scudi overheal
+  vento: { velocita: 0.15 },
+  faretrabenedetta: { frecce: 8, frecceIndietro: 1 },         // frecce restituite a ogni uccisione
+  giudizio: { danno: 0.2, dannoBoss: 0.2 },                   // contro boss ed élite: +20% e poi altri +20%
+  mira: { raggio: 350 },
+  ricaricasacra: { ricarica: 0.7, raggioSpinta: 160, forzaSpinta: 520, durataSpintaMs: 220 },
+  secondavita: { vita: 0.5, invulnerabileMs: 2000 },          // una volta per partita
+  sciavento: { durataMs: 1500, raggio: 14, moltDanno: 0.6, intervalloMs: 300 },
+  calice: { velocitaPerScudo: 0.08 },                         // +8% velocità per ogni scudo overheal attivo
+};
+
 // Orda che accompagna il boss: gruppi di nemici che arrivano insieme a lui
 const ORDA_BOSS = { gruppi: 2, nemiciPerGruppo: 4, extraPerCiclo: 1 };
 

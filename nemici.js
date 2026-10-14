@@ -45,7 +45,7 @@ function preparaNemico(scena, n, tipo, dati, molt) {
   n.tipoNemico = tipo;
   n.dati = dati;
   n.colore = dati.colore;
-  n.vitaMax = Math.round(dati.vita * molt);
+  n.vitaMax = Math.round(dati.vita * molt * scena.stats.vitaNemiciMolt); // Occhi di brace: più vita
   n.vita = n.vitaMax;
   n.exp = dati.exp;
   // Aggressività: dopo ogni boss i nemici sono più veloci e attaccano più spesso
@@ -63,6 +63,8 @@ function preparaNemico(scena, n, tipo, dati, molt) {
   n.rallentatoFino = 0;
   n.rallentamento = 0;
   n.ultimoColpoLama = -Infinity;
+  n.ultimoColpoScia = -Infinity;
+  n.spintaFino = 0;    // Ricarica sacra: finché è spinto via non decide da solo dove andare
 }
 
 // Velocità reale di un nemico in questo momento: difficoltà, furia, gelo...
@@ -87,6 +89,8 @@ function aggiornaNemico(scena, n, t) {
   else if (n.elite) n.setStrokeStyle(3, ELITE.colore);
   else n.isStroked = false;
 
+  if (t < n.spintaFino) return; // sta volando via, respinto
+
   if (n.eBoss) aggiornaBoss(scena, n, t);
   else if (n.tipoNemico === 'caricatore') aggiornaCaricatore(scena, n, t);
   else if (n.tipoNemico === 'tiratore') aggiornaTiratore(scena, n, t);
@@ -96,7 +100,7 @@ function aggiornaNemico(scena, n, t) {
 
 // Dove mira un nemico: il giocatore, oppure (élite) dove il giocatore sta andando
 function bersaglioDi(scena, n) {
-  const g = scena.giocatore;
+  const g = scena.vista();
   if (!n.elite) return { x: g.x, y: g.y };
   const v = g.body.velocity;
   return scena.arena.limita(g.x + v.x * ELITE.previsioneS, g.y + v.y * ELITE.previsioneS);
@@ -117,7 +121,7 @@ function insegui(scena, n, velocita) {
 
 function aggiornaCaricatore(scena, n, t) {
   const d = n.dati;
-  const g = scena.giocatore;
+  const g = scena.vista(); // dove i nemici ti vedono (Ombra lenta può ingannarli)
   const furia = scena.round.furia(t);
 
   if (n.stato === 'insegue') {
@@ -161,7 +165,7 @@ function aggiornaCaricatore(scena, n, t) {
 
 function aggiornaTiratore(scena, n, t) {
   const d = n.dati;
-  const g = scena.giocatore;
+  const g = scena.vista(); // dove i nemici ti vedono (Ombra lenta può ingannarli)
   const distanza = Phaser.Math.Distance.Between(n.x, n.y, g.x, g.y);
   const furia = scena.round.furia(t);
 
@@ -204,7 +208,7 @@ function aggiornaTiratore(scena, n, t) {
 // Dopo un attimo il cerchio esplode: chi è rimasto fermo viene colpito.
 function aggiornaMortaio(scena, n, t) {
   const d = n.dati;
-  const g = scena.giocatore;
+  const g = scena.vista(); // dove i nemici ti vedono (Ombra lenta può ingannarli)
   const distanza = Phaser.Math.Distance.Between(n.x, n.y, g.x, g.y);
   const furia = scena.round.furia(t);
   const ideale = furia > 1 ? 0 : d.distanzaIdeale; // infuriato ti viene addosso
@@ -283,12 +287,15 @@ function disattivaProiettile(p) {
 // "fonte" serve al riepilogo di fine run.
 function colpisciNemico(scena, n, danno, fonte = 'Frecce') {
   if (!n.active) return;
+  // Lama del giudizio: più danno contro boss ed élite
+  if (n.eBoss || n.elite) danno *= scena.stats.dannoBossMolt;
   scena.registraDanno(fonte, Math.min(danno, n.vita));
   n.vita -= danno;
 
   if (n.vita <= 0) {
     scena.uccisioni++;
     scena.guadagnaExp(n.exp);
+    scena.alUccidere();
     if (n.tipoNemico === 'miniboss') scena.bottinoMiniboss();
     if (n.avviso) n.avviso.destroy();
     if (n === scena.bossAttivo) scena.bossAttivo = null;

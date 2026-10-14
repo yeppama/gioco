@@ -87,7 +87,8 @@ class GestoreRound {
   intervallo() {
     const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.numero - 1);
     const minimo = Math.max(ONDATE.intervalloMinimoAssolutoMs, ONDATE.intervalloMinimoMs - ONDATE.riduzioneMinimoPerCicloMs * this.ciclo());
-    return Math.max(ms, minimo);
+    // Sete di battaglia: i gruppi arrivano più spesso
+    return Math.max(ms, minimo) * this.scena.stats.intervalloOndateMolt;
   }
 
   // Velocità dei nemici in questo round: +7% a round dentro il ciclo
@@ -151,6 +152,7 @@ class GestoreRound {
     this.inizio = t;
     this.prossimaComparsa = t + 500;
     this.scena.dannoNelRound = false;
+    this.scena.seteBonus = 0; // Sete di battaglia: il bonus vale solo per un round
     this.moltExtra = 1;
 
     // Eventi della scala dei round senza danni

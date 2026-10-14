@@ -31,6 +31,14 @@ class Arco {
   iniziaRicarica(t) {
     this.inRicarica = true;
     this.fineRicarica = t + this.stats.ricaricaMs;
+    // Ricarica sacra: mentre ricarichi sei indifeso, quindi i nemici vicini vengono respinti
+    if (this.stats.spintaRicarica) this.scena.respingiNemici(t);
+  }
+
+  // Faretra benedetta: un'uccisione restituisce frecce (mai oltre la faretra, non durante la ricarica)
+  restituisci(quante) {
+    if (this.inRicarica || quante <= 0) return;
+    this.frecceRimaste = Math.min(this.stats.frecceFaretra, this.frecceRimaste + quante);
   }
 
   // Ricarica manuale (Ctrl): solo se la faretra non è già piena
@@ -101,6 +109,7 @@ class Arco {
     let angolo = Math.atan2(scena.direzione.y, scena.direzione.x);
 
     // Occhio del cacciatore: se c'è un nemico abbastanza vicino, si mira a lui
+    // (anche Mira ossessiva: stessa regola, raggio più corto)
     if (this.stats.raggioMira > 0) {
       const bersaglio = scena.nemicoPiuVicino(this.stats.raggioMira);
       if (bersaglio) angolo = Phaser.Math.Angle.Between(g.x, g.y, bersaglio.x, bersaglio.y);
@@ -121,9 +130,9 @@ class Arco {
         const spostamento = (k - (affiancate - 1) / 2) * DISTANZA_PARALLELE;
         const x = g.x + Math.cos(a) * PARTENZA_FRECCIA + Math.cos(perpendicolare) * spostamento;
         const y = g.y + Math.sin(a) * PARTENZA_FRECCIA + Math.sin(perpendicolare) * spostamento;
-        // Furia cieca: ogni freccia devia un po' a caso
-        const deviazione = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-1, 1) * this.stats.deviazione);
-        this.lancia(x, y, a + deviazione);
+        // Furia cieca: una parte delle frecce parte in una direzione qualsiasi
+        const aCaso = Math.random() < this.stats.colpiACaso;
+        this.lancia(x, y, aCaso ? Phaser.Math.FloatBetween(-Math.PI, Math.PI) : a);
       }
     }
   }

@@ -24,7 +24,8 @@ class Fulmine {
 
     if (fermo) {
       this.fermoDa += delta;
-      if (this.fermoDa >= FULMINE.graziaMs && t >= this.prossimoColpo) {
+      // Patto del fulmine accorcia l'attesa (stats.graziaFulmineMs)
+      if (this.fermoDa >= this.scena.stats.graziaFulmineMs && t >= this.prossimoColpo) {
         this.colpisci();
         this.prossimoColpo = t + FULMINE.intervalloMs;
       }
@@ -36,7 +37,7 @@ class Fulmine {
     }
 
     // Avviso: compare a metà dell'attesa e si stringe fino al primo colpo
-    const avanzamento = this.fermoDa / FULMINE.graziaMs;
+    const avanzamento = this.fermoDa / this.scena.stats.graziaFulmineMs;
     const mostra = fermo && avanzamento > 0.4 && avanzamento < 1;
     this.avviso.setVisible(mostra).setPosition(g.x, g.y);
     if (mostra) this.avviso.setScale(1.6 - avanzamento);
@@ -49,8 +50,19 @@ class Fulmine {
   colpisci() {
     const scena = this.scena;
     const g = scena.giocatore;
-    scena.subisciDanno(this.dannoProssimo());
+    const danno = this.dannoProssimo();
+    scena.subisciDanno(danno);
     this.livello++;
+
+    // Patto del fulmine: la scarica colpisce anche i nemici vicini (molto più forte)
+    if (scena.stats.fulmineSuNemici) {
+      const P = BENEDIZIONI.pattofulmine;
+      const cerchio = scena.add.circle(g.x, g.y, P.raggio, 0xffe066, 0.18).setDepth(5);
+      scena.time.delayedCall(150, () => cerchio.destroy());
+      for (const n of scena.nemici.getChildren().slice()) {
+        if (Phaser.Math.Distance.Between(g.x, g.y, n.x, n.y) <= P.raggio) colpisciNemico(scena, n, danno * P.moltDannoNemici, 'Fulmine');
+      }
+    }
 
     // Disegno: una saetta gialla che cade dall'alto e un lampo sul giocatore
     const saetta = scena.add.rectangle(g.x, g.y - 150, 6, 300, 0xffe066).setDepth(6);

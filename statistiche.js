@@ -33,9 +33,25 @@ function calcolaStatistiche(livelli) {
     vitaMaxMolt: 1,
     expMolt: 1,
     velocitaNemiciMolt: 1,
-    deviazione: 0,        // gradi di deviazione casuale delle frecce
+    vitaNemiciMolt: 1,
+    intervalloOndateMolt: 1, // < 1 = i gruppi di nemici arrivano più spesso
+    dannoBossMolt: 1,     // danno in più contro boss ed élite
+    cureMolt: 1,          // quanto valgono le cure
+    // Regole speciali delle benedizioni (0 / false = non attive)
+    colpiACaso: 0,        // probabilità che una freccia parta in una direzione a caso
+    velocitaSePiena: 1,   // velocità con più di metà faretra
+    vitaPerUccisione: 0,
     ultimoRespiro: false,
-    rigenerazioneBloccata: false,
+    fulmineSuNemici: false,
+    graziaFulmineMs: FULMINE.graziaMs,
+    invisibileMs: 0,
+    setePerUccisione: 0,
+    schivataDiVita: 0,    // > 0 = la schivata costa questa parte di vita invece delle frecce
+    frecceUccisione: 0,
+    spintaRicarica: false,
+    secondaVita: false,
+    sciaSchivata: false,
+    velocitaPerScudo: 0,
   };
 
   for (const voce of [...ABILITA, ...COMBINAZIONI, ...MALEDETTE, ...DIVINE, ...PREMI]) {
@@ -49,7 +65,8 @@ function calcolaStatistiche(livelli) {
 
   // Limiti finali
   s.cadenzaMs = Math.max(s.cadenzaMs, LIMITI.cadenzaMinMs);
-  s.costoSchivata = Math.max(s.costoSchivata, LIMITI.costoSchivataMin);
+  // Corpo di cenere: la schivata non costa frecce (unica eccezione al minimo)
+  s.costoSchivata = s.schivataDiVita > 0 ? 0 : Math.max(s.costoSchivata, LIMITI.costoSchivataMin);
   s.vitaMax = Math.min(s.vitaMax, LIMITI.vitaMaxMassima);
   s.frecceFaretra = Math.min(Math.round(s.frecceFaretra), LIMITI.faretraMassima);
   return s;

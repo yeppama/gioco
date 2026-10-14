@@ -75,7 +75,7 @@ function provaASchivare(scena, n, t) {
 
 function aggiornaBoss(scena, n, t) {
   const d = n.dati;
-  const g = scena.giocatore;
+  const g = scena.vista(); // dove il boss ti vede
 
   if (n.stato === 'schiva') {
     n.body.setVelocity(n.dirCarica.x * 520, n.dirCarica.y * 520);
@@ -116,7 +116,7 @@ function aggiornaBoss(scena, n, t) {
 
 // Sceglie il prossimo attacco e lo annuncia
 function iniziaAttacco(scena, n, t) {
-  const g = scena.giocatore;
+  const g = scena.vista();
   n.attaccoCorrente = n.attacchi[n.indiceAttacco % n.attacchi.length];
   n.indiceAttacco++;
   const att = n.dati[n.attaccoCorrente];
@@ -159,7 +159,7 @@ function eseguiAttacco(scena, n, t, pausa) {
   } else if (n.attaccoCorrente === 'pioggia') {
     pioggiaDiColpi(scena, att, danno);
   } else if (n.attaccoCorrente === 'ventaglio') {
-    const centro = Phaser.Math.Angle.Between(n.x, n.y, scena.giocatore.x, scena.giocatore.y);
+    const centro = Phaser.Math.Angle.Between(n.x, n.y, scena.vista().x, scena.vista().y);
     const apertura = Phaser.Math.DegToRad(att.apertura);
     for (let i = 0; i < att.proiettili; i++) {
       const a = centro - apertura / 2 + apertura * i / (att.proiettili - 1);
@@ -177,7 +177,7 @@ function eseguiAttacco(scena, n, t, pausa) {
 
 // La prima zona cade esattamente dove sei: restare fermi è la cosa peggiore
 function pioggiaDiColpi(scena, att, danno) {
-  const g = scena.giocatore;
+  const g = scena.vista();
   for (let i = 0; i < att.zone; i++) {
     const x = i === 0 ? g.x : g.x + Phaser.Math.Between(-att.spargimento, att.spargimento);
     const y = i === 0 ? g.y : g.y + Phaser.Math.Between(-att.spargimento, att.spargimento);

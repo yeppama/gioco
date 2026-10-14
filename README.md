@@ -33,6 +33,7 @@ Modalità prova: https://yeppama.github.io/gioco/?debug=1 (L livello, I invincib
 - `boss.js` — boss e mini boss
 - `arco.js` — frecce, faretra, ricarica e colpo caricato
 - `lame.js` — lame orbitanti
+- `scia.js` — scia del vento (benedizione divina)
 - `consumabili.js` — sfere di vita nell'arena
 - `fulmine.js` — fulmini su chi resta fermo
 - `round.js` — round, ondate, furia, difficoltà e round dei boss
