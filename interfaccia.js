@@ -23,6 +23,11 @@ class Interfaccia {
     this.testoRound = testo(LARGHEZZA / 2, 14, '#ffffff').setOrigin(0.5, 0);
     this.testoTimer = testo(LARGHEZZA / 2, 38, '#8a8a99').setOrigin(0.5, 0);
 
+    // Barra della vita del boss, sotto il numero del round
+    this.nomeBoss = testo(LARGHEZZA / 2, 62, '#f2e6b8', '16px').setOrigin(0.5, 0);
+    this.sfondoBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0x2a2a35).setOrigin(0, 0.5).setDepth(20);
+    this.barraBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0xc0392b).setOrigin(0, 0.5).setDepth(21);
+
     // Scritta grande al centro (inizio e fine round)
     this.banner = scena.add.text(LARGHEZZA / 2, ALTEZZA / 2 - 120, '', {
       fontSize: '40px', color: '#ffffff', fontStyle: 'bold',
@@ -39,7 +44,7 @@ class Interfaccia {
     scena.add.text(16, ALTEZZA - 28, aiuto, { fontSize: '15px', color: '#8a8a99' }).setDepth(20);
 
     if (scena.debug) {
-      scena.add.text(LARGHEZZA - 16, 14, 'DEBUG\nL: livello\nI: invincibile\nN: round dopo', {
+      scena.add.text(LARGHEZZA - 16, 14, 'DEBUG\nL: livello\nI: invincibile\nN: chiudi round\nB: boss  M: mini boss', {
         fontSize: '14px', color: '#ff6b6b', align: 'right',
       }).setOrigin(1, 0).setDepth(20);
     }
@@ -54,12 +59,22 @@ class Interfaccia {
 
     // Round e timer
     this.testoRound.setText(s.round.numero > 0 ? 'Round ' + s.round.numero : '');
-    const secondi = s.round.secondiRimasti(t);
-    this.testoTimer.setText(secondi === null ? '' : secondi + ' s');
+    this.testoTimer.setText(s.round.testoStato(t));
+
+    // Barra del boss: visibile solo se c'è un boss o mini boss in campo
+    const boss = s.bossAttivo;
+    const visibile = !!(boss && boss.active);
+    this.nomeBoss.setVisible(visibile);
+    this.sfondoBoss.setVisible(visibile);
+    this.barraBoss.setVisible(visibile);
+    if (visibile) {
+      this.nomeBoss.setText(boss.dati.nome);
+      this.barraBoss.setSize(360 * Phaser.Math.Clamp(boss.vita / boss.vitaMax, 0, 1), 10);
+    }
 
     // Frecce e ricarica
     if (s.frecceRimaste === 0) {
-      const avanzamento = 1 - (s.fineRicarica - t) / RICARICA_MS; // da 0 a 1
+      const avanzamento = 1 - (s.fineRicarica - t) / s.stats.ricaricaMs; // da 0 a 1
       this.testoFrecce.setText('Ricarica...');
       this.barraRicarica.setVisible(true);
       this.barraRicarica.setPosition(s.giocatore.x - LATO_GIOCATORE / 2, s.giocatore.y + LATO_GIOCATORE / 2 + 8);

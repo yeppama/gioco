@@ -44,6 +44,23 @@ const ABILITA = [
     applica: (s, liv) => { s.raggioMira = 150 + 100 * liv; },
   },
 
+  // --- Elementali ed evocazioni ---
+  {
+    id: 'fuoco', nome: 'Frecce infuocate', max: 3,
+    descrizione: (liv) => 'I nemici colpiti bruciano: ' + (3 * liv) + ' danni ogni mezzo secondo per 3 secondi',
+    applica: (s, liv) => { s.fuocoDanno = 3 * liv; },
+  },
+  {
+    id: 'gelo', nome: 'Frecce di brina', max: 3,
+    descrizione: (liv) => 'I nemici colpiti rallentano del ' + (20 + 10 * liv) + '% per 2 secondi (metà sui boss)',
+    applica: (s, liv) => { s.geloRallenta = 0.2 + 0.1 * liv; },
+  },
+  {
+    id: 'lame', nome: 'Lame orbitanti', max: 3,
+    descrizione: (liv) => (liv === 1 ? 'Una lama gira' : liv + ' lame girano') + ' attorno a te e ferisce chi tocca',
+    applica: (s, liv) => { s.lame = liv; },
+  },
+
   // --- Difesa ---
   {
     id: 'vigore', nome: 'Vigore', max: 5,
@@ -67,10 +84,10 @@ const ABILITA = [
   },
 ];
 
-// Pesca fino a "quante" abilità diverse, escluse quelle già al massimo.
-// livelli = { idAbilita: livello attuale }
-function estraiOpzioni(livelli, quante) {
-  const disponibili = ABILITA.filter(a => (livelli[a.id] || 0) < a.max);
+// Pesca fino a "quante" voci diverse da una tabella (abilità o benedizioni),
+// escluse quelle già al massimo. livelli = { id: livello attuale }
+function estraiOpzioni(livelli, quante, tabella) {
+  const disponibili = (tabella || ABILITA).filter(a => (livelli[a.id] || 0) < a.max);
   return Phaser.Utils.Array.Shuffle(disponibili.slice()).slice(0, quante).map(a => {
     const prossimo = (livelli[a.id] || 0) + 1;
     return { id: a.id, nome: a.nome, livello: prossimo, descrizione: a.descrizione(prossimo) };

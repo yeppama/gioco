@@ -34,6 +34,18 @@ const DURATA_SCHIVATA_MS = 180;    // durata dello scatto; in questo tempo non s
 // Abilità difensive
 const INTERVALLO_RIGENERAZIONE_MS = 2000; // ogni quanto agisce Rigenerazione
 
+// Abilità elementali ed evocazioni
+const DURATA_FUOCO_MS = 3000;     // per quanto brucia un nemico colpito
+const INTERVALLO_FUOCO_MS = 500;  // ogni quanto il fuoco fa danno
+const DURATA_GELO_MS = 2000;      // per quanto resta rallentato
+const LAME = {
+  raggio: 64,              // distanza dal giocatore
+  giriAlSecondo: 0.5,      // velocità di rotazione
+  lato: 14,
+  danno: 8,
+  intervalloColpoMs: 400,  // ogni quanto una lama può colpire lo stesso nemico
+};
+
 // Limiti: qualunque combinazione di abilità non può superarli
 // (servono a evitare personaggi invincibili o rotti)
 const LIMITI = {
@@ -47,22 +59,54 @@ const LIMITI = {
 const EXP_PRIMO_LIVELLO = 30;
 const CRESCITA_EXP = 1.2;
 
-// Round: si sopravvive per un tempo fisso mentre arrivano nemici sempre più spesso
+// Round: per DURATA_ROUND_S secondi arrivano nemici sempre più spesso.
+// Poi smettono di arrivare, ma il round finisce solo quando li hai uccisi tutti:
+// nel frattempo quelli rimasti si infuriano e diventano sempre più veloci.
 const DURATA_ROUND_S = 45;
 const PAUSA_TRA_ROUND_MS = 3000;
+const FURIA_PER_SECONDO = 0.08;  // dopo i 45 s: +8% di velocità ogni secondo
+const FURIA_MASSIMA = 2.5;       // al massimo 2,5 volte più veloci
 const ONDATE = {
-  intervalloInizialeMs: 2500, // nel round 1 compare un nemico ogni 2,5 secondi
-  riduzionePerRoundMs: 300,   // ogni round compaiono un po' più spesso
+  intervalloInizialeMs: 2500, // nel primo round di ogni ciclo compare un nemico ogni 2,5 secondi
+  riduzionePerRoundMs: 200,   // ogni round compaiono un po' più spesso
   intervalloMinimoMs: 900,
   maxNemiciInsieme: 12,       // mai più di così in campo
 };
-const CRESCITA_NEMICI_PER_ROUND = 0.08; // +8% di vita ai nemici per ogni round
 // Da quale round compare ogni tipo, e quanto è frequente (peso più alto = più frequente)
 const COMPARSA_TIPI = [
   { tipo: 'inseguitore', daRound: 1, peso: 5 },
   { tipo: 'caricatore', daRound: 2, peso: 2 },
   { tipo: 'tiratore', daRound: 3, peso: 2 },
 ];
+
+// Round speciali e difficoltà.
+// Un "ciclo" = i round fino al boss. Dentro un ciclo ogni round i nemici
+// hanno il 2% in più di vita, danno e velocità; dopo ogni boss si sale del 20%.
+const OGNI_QUANTI_ROUND_BOSS = 10;
+const OGNI_QUANTI_ROUND_MINIBOSS = 7;  // se coincide con il boss, vince il boss
+const CRESCITA_PER_ROUND = 0.02;
+const CRESCITA_PER_CICLO = 0.20;
+
+// Boss (round 10, 20, 30...): 3 attacchi annunciati, a turno
+const BOSS = {
+  nome: 'Il Custode Cinereo',
+  vita: 2500, velocita: 70, danno: 25, lato: 72, colore: 0x7a6a58, exp: 150,
+  pausaTraAttacchiMs: 1400,
+  carica: { preparazioneMs: 800, velocita: 480, durataMs: 700 },
+  anello: { preparazioneMs: 700, proiettili: 14, velocita: 200, danno: 15 },
+  evocazione: { preparazioneMs: 900, quanti: 3 },
+  // Dal secondo ciclo, sotto metà vita: attacca più spesso e gli anelli sono doppi
+  faseExtra: { sogliaVita: 0.5, pausaTraAttacchiMs: 900, colore: 0x9a4a3a },
+};
+
+// Mini boss (round 7, 14, 21...): in futuro lascerà amuleti e strumenti
+const MINIBOSS = {
+  nome: 'La Sentinella Spezzata',
+  vita: 700, velocita: 95, danno: 20, lato: 48, colore: 0x5f8f7a, exp: 60,
+  pausaTraAttacchiMs: 1600,
+  ventaglio: { preparazioneMs: 600, proiettili: 5, apertura: 50, velocita: 240, danno: 12 },
+  carica: { preparazioneMs: 600, velocita: 450, durataMs: 500 },
+};
 
 // Nemici: ogni tipo ha i suoi valori (exp = esperienza data quando muore)
 const TIPI_NEMICO = {

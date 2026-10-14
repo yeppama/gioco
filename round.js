@@ -1,62 +1,128 @@
 // ============================================================
 // ROUND - il ritmo della partita
 //
-// Ogni round dura DURATA_ROUND_S secondi. Durante il round i nemici
-// compaiono a intervalli regolari, sempre più fitti. Allo scadere
-// del tempo i nemici rimasti spariscono, c'è una breve pausa
-// e parte il round successivo.
-// (Il boss dopo il round 5 arriverà nella Fase 3.)
+// Round normale: per DURATA_ROUND_S secondi compaiono nemici.
+// Poi smettono di arrivare, ma il round finisce solo quando sono
+// tutti morti: intanto quelli rimasti si infuriano (più veloci).
+//
+// Ogni OGNI_QUANTI_ROUND_MINIBOSS round arriva anche un mini boss,
+// ogni OGNI_QUANTI_ROUND_BOSS round c'è solo il boss.
+// Un "ciclo" sono i round fino al boss: dopo ogni boss tutto è più forte.
 // ============================================================
 
 class GestoreRound {
   constructor(scena) {
     this.scena = scena;
     this.numero = 0;
-    this.fase = 'pausa';        // 'pausa' oppure 'combattimento'
+    this.tipo = 'normale';      // 'normale', 'miniboss' oppure 'boss'
+    this.fase = 'pausa';        // 'pausa', 'combattimento' oppure 'ripulisci'
     this.fineFase = 1000;       // il primo round parte 1 secondo dopo l'inizio
     this.inizio = 0;
+    this.inizioFuria = 0;
     this.prossimaComparsa = 0;
   }
 
+  // --- Numeri che dipendono dal round ---
+
+  tipoDelRound(numero) {
+    if (numero % OGNI_QUANTI_ROUND_BOSS === 0) return 'boss';
+    if (numero % OGNI_QUANTI_ROUND_MINIBOSS === 0) return 'miniboss';
+    return 'normale';
+  }
+
+  // 0 nel primo ciclo (round 1-10), 1 nel secondo (11-20)...
+  ciclo() {
+    return Math.floor(Math.max(0, this.numero - 1) / OGNI_QUANTI_ROUND_BOSS);
+  }
+
+  // Da 1 a 10: a che punto del ciclo siamo
+  roundNelCiclo() {
+    return (Math.max(0, this.numero - 1) % OGNI_QUANTI_ROUND_BOSS) + 1;
+  }
+
+  // Quanto sono più forti i nemici rispetto ai valori di config.js
+  moltiplicatore() {
+    return (1 + CRESCITA_PER_CICLO * this.ciclo()) * (1 + CRESCITA_PER_ROUND * (this.roundNelCiclo() - 1));
+  }
+
+  // Dopo i 45 secondi i nemici rimasti accelerano sempre di più
+  furia(t) {
+    if (this.fase !== 'ripulisci') return 1;
+    return Math.min(FURIA_MASSIMA, 1 + FURIA_PER_SECONDO * (t - this.inizioFuria) / 1000);
+  }
+
+  // Millisecondi tra un nemico e il successivo in questo round
+  intervallo() {
+    const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.roundNelCiclo() - 1);
+    return Math.max(ms, ONDATE.intervalloMinimoMs);
+  }
+
+  // --- Andamento del round ---
+
   aggiorna(t) {
+    const nemiciVivi = this.scena.nemici.countActive();
+
     if (this.fase === 'pausa') {
       if (t >= this.fineFase) this.iniziaRound(t);
       return;
     }
 
-    if (t - this.inizio >= DURATA_ROUND_S * 1000) {
-      this.terminaRound(t);
+    // Round del boss: niente tempo, finisce quando il boss (e i suoi evocati) sono morti
+    if (this.tipo === 'boss') {
+      if (nemiciVivi === 0) this.terminaRound(t);
       return;
     }
 
-    if (t >= this.prossimaComparsa) {
-      if (this.scena.nemici.countActive() < ONDATE.maxNemiciInsieme) {
-        generaNemico(this.scena, this.tipoCasuale());
+    if (this.fase === 'combattimento') {
+      if (t - this.inizio >= DURATA_ROUND_S * 1000) {
+        this.fase = 'ripulisci';
+        this.inizioFuria = t;
+        if (nemiciVivi > 0) this.scena.interfaccia.mostraBanner('Elimina i rimasti!');
+        return;
       }
-      this.prossimaComparsa = t + this.intervallo();
+      if (t >= this.prossimaComparsa) {
+        if (nemiciVivi < ONDATE.maxNemiciInsieme) generaNemico(this.scena, this.tipoCasuale());
+        this.prossimaComparsa = t + this.intervallo();
+      }
+      return;
     }
+
+    // fase 'ripulisci'
+    if (nemiciVivi === 0) this.terminaRound(t);
   }
 
   iniziaRound(t) {
     this.numero++;
+    this.tipo = this.tipoDelRound(this.numero);
     this.fase = 'combattimento';
     this.inizio = t;
     this.prossimaComparsa = t + 500;
-    this.scena.interfaccia.mostraBanner('Round ' + this.numero);
+    this.scena.dannoNelRound = false;
+
+    if (this.tipo === 'boss') {
+      generaBoss(this.scena, 'boss');
+      this.scena.interfaccia.mostraBanner(BOSS.nome);
+    } else if (this.tipo === 'miniboss') {
+      generaBoss(this.scena, 'miniboss');
+      this.scena.interfaccia.mostraBanner('Round ' + this.numero + ': ' + MINIBOSS.nome);
+    } else {
+      this.scena.interfaccia.mostraBanner('Round ' + this.numero);
+    }
   }
 
   terminaRound(t) {
     this.fase = 'pausa';
     this.fineFase = t + PAUSA_TRA_ROUND_MS;
+    // Normalmente non c'è più nessuno; serve se il round viene chiuso dal tasto debug
     for (const n of this.scena.nemici.getChildren().slice()) dissolviNemico(this.scena, n);
     for (const p of this.scena.proiettiliNemici.getChildren()) if (p.active) disattivaProiettile(p);
-    this.scena.interfaccia.mostraBanner('Round ' + this.numero + ' superato!');
-  }
 
-  // Millisecondi tra un nemico e il successivo in questo round
-  intervallo() {
-    const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.numero - 1);
-    return Math.max(ms, ONDATE.intervalloMinimoMs);
+    if (this.tipo === 'boss') {
+      this.scena.interfaccia.mostraBanner('Boss sconfitto! Ciclo ' + (this.ciclo() + 2));
+    } else {
+      this.scena.interfaccia.mostraBanner('Round ' + this.numero + ' superato!');
+    }
+    this.scena.fineRound(this.numero);
   }
 
   // Sceglie un tipo tra quelli già sbloccati, tenendo conto dei pesi
@@ -71,13 +137,10 @@ class GestoreRound {
     return possibili[0].tipo;
   }
 
-  moltiplicatoreVita() {
-    return 1 + CRESCITA_NEMICI_PER_ROUND * Math.max(0, this.numero - 1);
-  }
-
-  // Secondi che mancano alla fine del round (null se si è in pausa)
-  secondiRimasti(t) {
-    if (this.fase !== 'combattimento') return null;
-    return Math.max(0, Math.ceil(DURATA_ROUND_S - (t - this.inizio) / 1000));
+  // Testo sotto il numero del round: secondi rimasti, nemici da eliminare...
+  testoStato(t) {
+    if (this.fase === 'pausa' || this.tipo === 'boss') return '';
+    if (this.fase === 'ripulisci') return 'Rimasti: ' + this.scena.nemici.countActive();
+    return Math.max(0, Math.ceil(DURATA_ROUND_S - (t - this.inizio) / 1000)) + ' s';
   }
 }

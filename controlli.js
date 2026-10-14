@@ -14,7 +14,7 @@ class Controlli {
     // --- Tastiera ---
     this.frecceTastiera = scena.input.keyboard.createCursorKeys();
     this.tasti = scena.input.keyboard.addKeys('W,A,S,D,R,SHIFT');
-    this.tastiDebug = scena.input.keyboard.addKeys('L,I,N'); // usati solo con ?debug=1
+    this.tastiDebug = scena.input.keyboard.addKeys('L,I,N,B,M'); // usati solo con ?debug=1
 
     // --- Touch ---
     scena.input.addPointer(1);   // permette due dita insieme (joystick + schivata)
