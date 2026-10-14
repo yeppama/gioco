@@ -149,8 +149,9 @@ function aggiornaTiratore(scena, n, t) {
     return;
   }
 
-  // Cerca di stare alla sua distanza preferita; infuriato smette di scappare e si avvicina
-  const ideale = furia > 1 ? d.distanzaIdeale * 0.5 : d.distanzaIdeale;
+  // Cerca di stare alla sua distanza preferita; infuriato (fine round) ti viene addosso,
+  // così il round non si allunga all'infinito
+  const ideale = furia > 1 ? 0 : d.distanzaIdeale;
   const v = velocitaNemico(scena, n, d.velocita, t);
   if (distanza > ideale + 40) {
     insegui(scena, n, v);
@@ -175,7 +176,7 @@ function aggiornaMortaio(scena, n, t) {
   const g = scena.giocatore;
   const distanza = Phaser.Math.Distance.Between(n.x, n.y, g.x, g.y);
   const furia = scena.round.furia(t);
-  const ideale = furia > 1 ? d.distanzaIdeale * 0.5 : d.distanzaIdeale;
+  const ideale = furia > 1 ? 0 : d.distanzaIdeale; // infuriato ti viene addosso
   const v = velocitaNemico(scena, n, d.velocita, t);
 
   if (distanza > ideale + 60) {

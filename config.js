@@ -103,7 +103,7 @@ const FURIA_PER_SECONDO = 0.08;  // dopo il tempo: +8% di velocità ogni secondo
 const FURIA_MASSIMA = 2.5;       // al massimo 2,5 volte più veloci
 // I nemici arrivano a GRUPPI, ognuno da una direzione diversa
 const ONDATE = {
-  intervalloInizialeMs: 3500, // nel primo round di ogni ciclo un gruppo ogni 3,5 secondi
+  intervalloInizialeMs: 4000, // nel primo round di ogni ciclo un gruppo ogni 4 secondi
   riduzionePerRoundMs: 200,   // ogni round i gruppi arrivano un po' più spesso
   intervalloMinimoMs: 1800,
   gruppoMinimo: 2,            // nemici per gruppo all'inizio del ciclo
