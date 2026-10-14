@@ -15,7 +15,7 @@ class ScenaPartita extends Phaser.Scene {
     this.prossimoSparo = 0;       // da quando si può sparare di nuovo
     this.frecceRimaste = FRECCE_FARETRA;
     this.fineRicarica = 0;        // quando finisce la ricarica in corso
-    this.direzione = { x: 1, y: 0 }; // dove guarda il giocatore (all'inizio a destra)
+    this.direzione = { x: 1, y: 0 }; // dove spara: sempre al contrario di dove cammina (all'inizio a destra)
 
     // --- Ostacoli: rettangoli grigi che non si muovono ---
     this.ostacoli = this.physics.add.staticGroup();
@@ -33,7 +33,7 @@ class ScenaPartita extends Phaser.Scene {
     this.physics.add.existing(this.giocatore);
     this.giocatore.body.setCollideWorldBounds(true); // non esce dall'arena
 
-    // Il mirino: un puntino davanti al giocatore che mostra dove sparerà
+    // Il mirino: un puntino che mostra dove sparerà (dietro al giocatore quando cammina)
     this.mirino = this.add.rectangle(0, 0, 6, 6, 0xffffff);
 
     // --- Gruppi: frecce e nemici ---
@@ -75,7 +75,7 @@ class ScenaPartita extends Phaser.Scene {
 
     this.muoviGiocatore();
 
-    // Il mirino sta sempre davanti al giocatore
+    // Il mirino sta sempre dal lato in cui partono le frecce
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
 
     this.gestisciArco(time);
@@ -111,7 +111,9 @@ class ScenaPartita extends Phaser.Scene {
     }
 
     const inMovimento = dx !== 0 || dy !== 0;
-    if (inMovimento) this.direzione = { x: dx, y: dy }; // ricorda dove guarda
+    // Si spara alle proprie spalle: direzione opposta al movimento.
+    // Da fermo resta l'ultima direzione, quindi si continua a sparare lì.
+    if (inMovimento) this.direzione = { x: -dx, y: -dy };
 
     this.giocatore.body.setVelocity(dx * VELOCITA, dy * VELOCITA);
     return inMovimento;

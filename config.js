@@ -12,7 +12,7 @@ const LATO_GIOCATORE = 32;  // grandezza del quadrato
 const VITA_MAX = 100;       // punti vita iniziali
 const INVULNERABILITA_MS = 800; // dopo un colpo, per quanto non si subisce altro danno
 
-// Arco: spara sempre da solo, nella direzione in cui guarda il giocatore.
+// Arco: spara sempre da solo, alle spalle del giocatore (al contrario di dove cammina).
 // Dopo un certo numero di frecce la faretra è vuota e si ricarica.
 const CADENZA_MS = 400;          // un colpo ogni 0,4 secondi
 const FRECCE_FARETRA = 20;       // frecce prima di dover ricaricare
