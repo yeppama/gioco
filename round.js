@@ -1,7 +1,7 @@
 // ============================================================
 // ROUND - il ritmo della partita
 //
-// Round normale: per DURATA_ROUND_S secondi compaiono GRUPPI di nemici,
+// Round normale: per 20 s (+4 s a round) compaiono GRUPPI di nemici,
 // ognuno da una direzione diversa, fuori dallo schermo.
 // Poi smettono di arrivare, ma il round finisce solo quando sono
 // tutti morti: intanto quelli rimasti si infuriano (più veloci).
@@ -66,6 +66,11 @@ class GestoreRound {
     }
   }
 
+  // Secondi di comparse in questo round: 20, 24, 28... fino al boss
+  durataS() {
+    return Math.min(DURATA_ROUND.primoS + DURATA_ROUND.aumentoS * (this.roundNelCiclo() - 1), DURATA_ROUND.massimoS);
+  }
+
   // Millisecondi tra un gruppo e il successivo in questo round
   intervallo() {
     const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.roundNelCiclo() - 1);
@@ -89,7 +94,7 @@ class GestoreRound {
     }
 
     if (this.fase === 'combattimento') {
-      if (t - this.inizio >= DURATA_ROUND_S * 1000) {
+      if (t - this.inizio >= this.durataS() * 1000) {
         this.fase = 'ripulisci';
         this.inizioFuria = t;
         if (nemiciVivi > 0) this.scena.interfaccia.mostraBanner('Elimina i rimasti!');
@@ -139,7 +144,7 @@ class GestoreRound {
     } else {
       this.scena.interfaccia.mostraBanner('Round ' + this.numero + ' superato!');
     }
-    this.scena.fineRound(this.numero);
+    this.scena.fineRound(this.numero, this.tipo === 'boss');
   }
 
   // Sceglie un tipo tra quelli già sbloccati, tenendo conto dei pesi
@@ -158,6 +163,6 @@ class GestoreRound {
   testoStato(t) {
     if (this.fase === 'pausa' || this.tipo === 'boss') return '';
     if (this.fase === 'ripulisci') return 'Rimasti: ' + this.scena.nemici.countActive();
-    return Math.max(0, Math.ceil(DURATA_ROUND_S - (t - this.inizio) / 1000)) + ' s';
+    return Math.max(0, Math.ceil(this.durataS() - (t - this.inizio) / 1000)) + ' s';
   }
 }

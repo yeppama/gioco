@@ -31,7 +31,6 @@ class ScenaPartita extends Phaser.Scene {
     // Scelte da mostrare appena possibile, in ordine. All'inizio si sceglie la prima abilità.
     this.codaScelte = [{ tipo: 'abilita', titolo: 'Scegli la tua prima abilità' }];
     this.dannoNelRound = false;  // per la benedizione divina
-    this.divineRicevute = 0;     // ogni divina presa dimezza la probabilità della prossima
     this.bossAttivo = null;      // il boss o mini boss in campo (per la sua barra della vita)
 
     // Statistiche per il riepilogo di fine run
@@ -149,6 +148,7 @@ class ScenaPartita extends Phaser.Scene {
     // Il mirino sta sempre dal lato in cui partono le frecce
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
 
+    if (this.controlli.ricaricaManuale()) this.arco.ricaricaManuale(t);
     this.arco.aggiorna(t, this.controlli.caricaPremuta());
     this.gestisciDifese(t);
     this.lame.aggiorna(t);
@@ -291,12 +291,11 @@ class ScenaPartita extends Phaser.Scene {
   }
 
   // Chiamata da round.js quando un round finisce
-  fineRound(numero) {
-    if (numero < DIVINA_DAL_ROUND || this.dannoNelRound) return;
-    // Probabilità che si dimezza a ogni divina presa: 100%, 50%, 25%...
-    if (Math.random() < Math.pow(0.5, this.divineRicevute)) {
-      this.codaScelte.push({ tipo: 'divina', titolo: 'Nessun danno: benedizione divina' });
-    }
+  fineRound(numero, eraBoss) {
+    // Benedizione divina: solo e soltanto dopo aver sconfitto un boss
+    if (eraBoss) this.codaScelte.push({ tipo: 'divina', titolo: 'Il boss è caduto: benedizione divina' });
+    // Round senza danni: un premio a scelta
+    if (!this.dannoNelRound) this.codaScelte.push({ tipo: 'premio', titolo: 'Round senza danni!' });
   }
 
   // Chiamata quando muore il mini boss
@@ -306,7 +305,7 @@ class ScenaPartita extends Phaser.Scene {
 
   // Apre la schermata "scegli 1 tra 3" e mette in pausa la partita
   apriScelta(voce) {
-    const tabelle = { abilita: ABILITA, maledetta: MALEDETTE, divina: DIVINE };
+    const tabelle = { abilita: ABILITA, maledetta: MALEDETTE, divina: DIVINE, premio: PREMI };
     const opzioni = estraiOpzioni(this.livelliAbilita, 3, tabelle[voce.tipo]);
     if (opzioni.length === 0) return; // tutto già al massimo
     this.giocatore.body.setVelocity(0, 0);
@@ -320,7 +319,6 @@ class ScenaPartita extends Phaser.Scene {
           this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.vitaMax * RIPOSO_CURA);
         } else if (id) {
           this.prendiAbilita(id);
-          if (voce.tipo === 'divina') this.divineRicevute++;
         }
         this.scene.resume();
       },

@@ -36,7 +36,7 @@ function calcolaStatistiche(livelli) {
     rigenerazioneBloccata: false,
   };
 
-  for (const voce of [...ABILITA, ...MALEDETTE, ...DIVINE]) {
+  for (const voce of [...ABILITA, ...MALEDETTE, ...DIVINE, ...PREMI]) {
     const liv = livelli[voce.id] || 0;
     if (liv > 0) voce.applica(s, liv);
   }

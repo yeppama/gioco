@@ -61,10 +61,10 @@ const DURATA_SCHIVATA_MS = 180;    // durata dello scatto; in questo tempo non s
 // Rarità: quanto spesso esce una carta (peso più alto = più frequente)
 const PESI_RARITA = { comune: 10, rara: 4, leggendaria: 1 };
 
-// Benedizioni divine: a fine round senza danni (dal round 3), con una probabilità
-// che si dimezza ogni volta che ne prendi una (100%, 50%, 25%...)
-const DIVINA_DAL_ROUND = 3;
+// Benedizioni divine: solo dopo aver sconfitto un boss.
+// Round senza danni: premio a scelta tra vita, frecce e velocità.
 const RIPOSO_CURA = 0.2;   // la quarta opzione delle maledette: cura il 20% della vita
+const PREMIO = { cura: 0.3, frecce: 4, velocita: 0.05 };
 
 // Abilità difensive
 const INTERVALLO_RIGENERAZIONE_MS = 2000; // ogni quanto agisce Rigenerazione
@@ -90,14 +90,15 @@ const LIMITI = {
 };
 
 // Esperienza: per salire dal livello 1 al 2 servono EXP_PRIMO_LIVELLO punti,
-// poi ogni livello ne chiede il 20% in più
-const EXP_PRIMO_LIVELLO = 30;
-const CRESCITA_EXP = 1.2;
+// poi ogni livello ne chiede di più (vedi CRESCITA_EXP)
+const EXP_PRIMO_LIVELLO = 40;
+const CRESCITA_EXP = 1.3;   // ogni livello chiede il 30% in più del precedente
 
-// Round: per DURATA_ROUND_S secondi arrivano nemici sempre più spesso.
+// Round: per un certo tempo (DURATA_ROUND) arrivano nemici sempre più spesso.
 // Poi smettono di arrivare, ma il round finisce solo quando li hai uccisi tutti:
 // nel frattempo quelli rimasti si infuriano e diventano sempre più veloci.
-const DURATA_ROUND_S = 30;
+// Durata delle comparse: 20 s nel primo round del ciclo, poi +4 s a ogni round
+const DURATA_ROUND = { primoS: 20, aumentoS: 4, massimoS: 56 };
 const PAUSA_TRA_ROUND_MS = 2500;
 const FURIA_PER_SECONDO = 0.08;  // dopo il tempo: +8% di velocità ogni secondo
 const FURIA_MASSIMA = 2.5;       // al massimo 2,5 volte più veloci

@@ -5,7 +5,7 @@
 // chiede solo "dove vuole andare?", "vuole schivare?", "sta caricando?",
 // "vuole la pausa?".
 //
-// Tastiera: WASD/frecce, Shift schivata, Spazio colpo caricato, Esc o P pausa.
+// Tastiera: WASD/frecce, Shift schivata, Spazio colpo caricato, Ctrl ricarica, Esc o P pausa.
 // Touch:
 //  - metà destra: appoggia il dito dove vuoi, compare un joystick
 //  - metà sinistra: un tocco = schivata
@@ -20,7 +20,7 @@ class Controlli {
 
     // --- Tastiera ---
     this.frecceTastiera = scena.input.keyboard.createCursorKeys();
-    this.tasti = scena.input.keyboard.addKeys('W,A,S,D,R,SHIFT,SPACE,ESC,P');
+    this.tasti = scena.input.keyboard.addKeys('W,A,S,D,R,SHIFT,SPACE,ESC,P,CTRL');
     this.tastiDebug = scena.input.keyboard.addKeys('L,I,N,B,M'); // usati solo con ?debug=1
 
     // --- Touch ---
@@ -142,6 +142,11 @@ class Controlli {
   // true finché si tiene premuto Spazio o il pulsante Carica
   caricaPremuta() {
     return this.tasti.SPACE.isDown || this.ditoCarica !== null;
+  }
+
+  // true una volta sola per ogni pressione di Ctrl
+  ricaricaManuale() {
+    return Phaser.Input.Keyboard.JustDown(this.tasti.CTRL);
   }
 
   // true una volta sola per ogni pressione di Esc, P o del pulsante pausa

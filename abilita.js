@@ -39,11 +39,6 @@ const ABILITA = [
     descrizione: () => 'Spari il 15% più velocemente',
     applica: (s, liv) => { s.cadenzaMs *= Math.pow(0.85, liv); },
   },
-  {
-    id: 'mira', nome: 'Occhio del cacciatore', max: 3, rarita: 'rara',
-    descrizione: (liv) => 'Le frecce puntano da sole il nemico più vicino entro ' + (150 + 100 * liv) + ' pixel',
-    applica: (s, liv) => { s.raggioMira = 150 + 100 * liv; },
-  },
 
   // --- Elementali ed evocazioni ---
   {

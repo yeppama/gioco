@@ -31,6 +31,12 @@ class Arco {
     this.fineRicarica = t + this.stats.ricaricaMs;
   }
 
+  // Ricarica manuale (Ctrl): solo se la faretra non è già piena
+  ricaricaManuale(t) {
+    if (this.inRicarica || this.staCaricando || this.frecceRimaste >= this.stats.frecceFaretra) return;
+    this.iniziaRicarica(t);
+  }
+
   // Toglie frecce dalla faretra (schivata); restituisce false se non bastano
   consuma(quante, t) {
     if (this.inRicarica || this.frecceRimaste < quante) return false;

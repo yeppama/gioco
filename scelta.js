@@ -28,6 +28,7 @@ class ScenaScelta extends Phaser.Scene {
       abilita: { titolo: '#f2e6b8', bordo: 0x5a5a6a, sotto: 'Scegli un\'abilità' },
       maledetta: { titolo: '#ff6b6b', bordo: 0xc0392b, sotto: 'Potere con un prezzo. Oppure riposa.' },
       divina: { titolo: '#f7d774', bordo: 0xf1c40f, sotto: 'Un dono senza prezzo' },
+      premio: { titolo: '#6fd36f', bordo: 0x2ecc71, sotto: 'Scegli il tuo premio' },
     };
     const stile = stili[this.dati.tipo] || stili.abilita;
 

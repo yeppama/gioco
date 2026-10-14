@@ -47,7 +47,7 @@ class Interfaccia {
     const touch = scena.sys.game.device.input.touch;
     const aiuto = touch
       ? 'Sinistra: schivata   Destra: joystick'
-      : 'WASD muoviti · Shift schivata · Spazio carica · Esc pausa';
+      : 'WASD muoviti · Shift schivata · Spazio carica · Ctrl ricarica · Esc pausa';
     scena.add.text(touch ? 130 : 16, ALTEZZA - 28, aiuto, { fontSize: '15px', color: '#8a8a99' })
       .setDepth(20).setScrollFactor(0);
 

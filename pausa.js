@@ -40,8 +40,10 @@ class ScenaPausa extends Phaser.Scene {
     // Colonna centrale: benedizioni
     titolo(300, 110, 'Benedizioni divine', '#f7d774');
     testo(300, 140, elenco(DIVINE));
-    titolo(300, 300, 'Benedizioni maledette', '#ff6b6b');
-    testo(300, 330, elenco(MALEDETTE));
+    titolo(300, 250, 'Benedizioni maledette', '#ff6b6b');
+    testo(300, 280, elenco(MALEDETTE));
+    titolo(300, 370, 'Premi', '#6fd36f');
+    testo(300, 400, elenco(PREMI).replace(/\/999/g, ''));
 
     // Colonna destra: statistiche reali
     const frecceRaffica = (1 + s.frecceParallele) * (1 + 2 * s.coppieDiagonali);
