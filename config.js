@@ -153,6 +153,30 @@ const MINIBOSS = {
   carica: { preparazioneMs: 600, velocita: 450, durataMs: 500 },
 };
 
+// Consumabili: sfere di vita che compaiono nell'arena ogni tanto
+const CONSUMABILI = {
+  intervalloMs: 12000,  // ogni quanto ne compare una
+  massimo: 3,           // mai più di così nell'arena
+  cura: 0.15,           // recupera il 15% della vita massima
+  raggio: 9,
+  durataMs: 20000,      // dopo 20 s sparisce
+  distanzaMin: 150,     // compare a questa distanza dal giocatore
+  distanzaMax: 500,
+};
+
+// Nemici d'élite: dopo il round 7 di ogni ciclo, uno per round fino al boss.
+// Più grandi, resistenti e "furbi": mirano dove stai andando, non dove sei.
+const ELITE = {
+  dopoRound: 7,
+  vita: 3, velocita: 1.15, danno: 1.3, lato: 1.3, exp: 4,
+  previsioneS: 0.45,    // quanto in avanti prevedono i tuoi movimenti, in secondi
+  colore: 0xf1c40f,     // bordo dorato
+};
+
+// Resistenze elementali: fuoco e gelo fanno meno effetto.
+// Gli élite ce l'hanno da subito; dopo ogni boss sconfitto tutti i nemici ne guadagnano.
+const RESISTENZA = { perBossSconfitto: 0.15, elite: 0.15, massima: 0.6 };
+
 // Nemici: ogni tipo ha i suoi valori (exp = esperienza data quando muore)
 const TIPI_NEMICO = {
   // Ti insegue e basta

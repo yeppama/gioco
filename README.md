@@ -9,6 +9,7 @@ Roguelite dark fantasy per browser, in stile Archero. Progetto hobby in sviluppo
 - WASD o frecce: muoversi (l'arco spara da solo alle tue spalle)
 - Shift: schivata (costa frecce)
 - Spazio (tieni premuto): colpo caricato
+- Ctrl: ricarica manuale
 - Esc o P: pausa, con abilità, benedizioni e statistiche
 - 1, 2, 3 o clic: scegliere un'abilità (4: Riposo al posto di una maledetta)
 - R: ricominciare dopo la morte
@@ -30,6 +31,7 @@ Modalità prova: https://yeppama.github.io/gioco/?debug=1 (L livello, I invincib
 - `boss.js` — boss e mini boss
 - `arco.js` — frecce, faretra, ricarica e colpo caricato
 - `lame.js` — lame orbitanti
+- `consumabili.js` — sfere di vita nell'arena
 - `round.js` — round, ondate, furia, difficoltà e round dei boss
 - `interfaccia.js` — testi e barre sullo schermo
 - `scelta.js` — la schermata "scegli 1 tra 3"

@@ -91,6 +91,7 @@ class ScenaPartita extends Phaser.Scene {
 
     // --- Comandi, round, interfaccia, evocazioni ---
     this.lame = new LameOrbitanti(this);
+    this.consumabili = new Consumabili(this);
     this.controlli = new Controlli(this);
     this.round = new GestoreRound(this);
     this.interfaccia = new Interfaccia(this);
@@ -152,6 +153,7 @@ class ScenaPartita extends Phaser.Scene {
     this.arco.aggiorna(t, this.controlli.caricaPremuta());
     this.gestisciDifese(t);
     this.lame.aggiorna(t);
+    this.consumabili.aggiorna(t);
     this.round.aggiorna(t);
     aggiornaZone(this, t);
 
@@ -211,14 +213,16 @@ class ScenaPartita extends Phaser.Scene {
   // Frecce infuocate e di brina
   applicaEffetti(n) {
     const t = this.tempo;
+    const resistenza = resistenzaDi(this, n); // élite e nemici dopo i boss resistono agli elementi
     if (this.stats.fuocoDanno > 0) {
       if (t >= n.bruciaFino) n.prossimaBruciatura = t + INTERVALLO_FUOCO_MS;
       n.bruciaFino = t + DURATA_FUOCO_MS;
-      n.dannoFuoco = this.stats.fuocoDanno * this.stats.dannoMolt;
+      n.dannoFuoco = this.stats.fuocoDanno * this.stats.dannoMolt * (1 - resistenza);
     }
     if (this.stats.geloRallenta > 0) {
       n.rallentatoFino = t + DURATA_GELO_MS;
-      n.rallentamento = n.eBoss ? this.stats.geloRallenta / 2 : this.stats.geloRallenta;
+      const gelo = n.eBoss ? this.stats.geloRallenta / 2 : this.stats.geloRallenta;
+      n.rallentamento = gelo * (1 - resistenza);
     }
   }
 
@@ -355,6 +359,7 @@ class ScenaPartita extends Phaser.Scene {
     this.flowField = this.arena.flowField;
     this.giocatore.body.reset(this.arena.l / 2, this.arena.a / 2);
     this.arco.disattivaTutte();
+    this.consumabili.svuota();
     svuotaZone(this);
   }
 

@@ -5,8 +5,8 @@
 // ============================================================
 
 // Fa comparire un nemico del tipo scelto nel punto (x, y);
-// senza punto, ne sceglie uno fuori dallo schermo
-function generaNemico(scena, tipo, x, y) {
+// senza punto, ne sceglie uno fuori dallo schermo. elite = versione potenziata
+function generaNemico(scena, tipo, x, y, elite = false) {
   if (x === undefined) {
     const g = scena.giocatore;
     const p = scena.arena.puntoComparsa(g.x, g.y, ONDATE.distanzaComparsaMin, ONDATE.distanzaComparsaMax);
@@ -16,11 +16,21 @@ function generaNemico(scena, tipo, x, y) {
 
   const dati = TIPI_NEMICO[tipo];
   const molt = scena.round.moltiplicatore(); // più forti a ogni round
-  const n = scena.add.rectangle(x, y, dati.lato, dati.lato, dati.colore);
+  const lato = dati.lato * (elite ? ELITE.lato : 1);
+  const n = scena.add.rectangle(x, y, lato, lato, dati.colore);
   scena.nemici.add(n); // il gruppo fisico gli dà anche un corpo per le collisioni
   n.body.setCollideWorldBounds(true);
 
   preparaNemico(scena, n, tipo, dati, molt);
+  if (elite) {
+    n.elite = true;
+    n.vitaMax = Math.round(n.vitaMax * ELITE.vita);
+    n.vita = n.vitaMax;
+    n.moltVelocita *= ELITE.velocita;
+    n.moltDanno *= ELITE.danno;
+    n.dannoContatto = Math.round(n.dannoContatto * ELITE.danno);
+    n.exp *= ELITE.exp;
+  }
   n.stato = 'insegue';  // caricatore: insegue, prepara, carica, recupero / tiratore: muove, mira
   n.prossimoTiro = scena.tempo + (dati.cadenzaMs || 0);
 
@@ -71,6 +81,7 @@ function aggiornaNemico(scena, n, t) {
   // Bordo colorato: arancione se brucia, azzurro se rallentato
   if (t < n.bruciaFino) n.setStrokeStyle(3, 0xff7a1a);
   else if (t < n.rallentatoFino) n.setStrokeStyle(3, 0x7fd6ff);
+  else if (n.elite) n.setStrokeStyle(3, ELITE.colore);
   else n.isStroked = false;
 
   if (n.eBoss) aggiornaBoss(scena, n, t);
@@ -80,10 +91,24 @@ function aggiornaNemico(scena, n, t) {
   else insegui(scena, n, velocitaNemico(scena, n, n.dati.velocita, t));
 }
 
-// Segue il flow field; quando è vicino punta dritto al giocatore
+// Dove mira un nemico: il giocatore, oppure (élite) dove il giocatore sta andando
+function bersaglioDi(scena, n) {
+  const g = scena.giocatore;
+  if (!n.elite) return { x: g.x, y: g.y };
+  const v = g.body.velocity;
+  return scena.arena.limita(g.x + v.x * ELITE.previsioneS, g.y + v.y * ELITE.previsioneS);
+}
+
+// Resistenza a fuoco e gelo: 0 = nessuna, 0.6 = effetti ridotti del 60%
+function resistenzaDi(scena, n) {
+  const base = RESISTENZA.perBossSconfitto * scena.round.ciclo() + (n.elite ? RESISTENZA.elite : 0);
+  return Math.min(RESISTENZA.massima, base);
+}
+
+// Segue il flow field; quando è vicino punta dritto al giocatore (o dove sta andando)
 function insegui(scena, n, velocita) {
   const passo = scena.flowField.prossimoPasso(n.x, n.y);
-  const bersaglio = passo || scena.giocatore;
+  const bersaglio = passo || bersaglioDi(scena, n);
   scena.physics.moveTo(n, bersaglio.x, bersaglio.y, velocita);
 }
 
@@ -96,7 +121,9 @@ function aggiornaCaricatore(scena, n, t) {
     insegui(scena, n, velocitaNemico(scena, n, d.velocita, t));
     if (Phaser.Math.Distance.Between(n.x, n.y, g.x, g.y) < d.distanzaCarica) {
       // La direzione si decide ADESSO: se ti sposti mentre lampeggia, lo scatto ti manca
-      const angolo = Phaser.Math.Angle.Between(n.x, n.y, g.x, g.y);
+      // (l'élite però mira dove stai andando)
+      const mira = bersaglioDi(scena, n);
+      const angolo = Phaser.Math.Angle.Between(n.x, n.y, mira.x, mira.y);
       n.dirCarica = { x: Math.cos(angolo), y: Math.sin(angolo) };
       n.stato = 'prepara';
       n.fineStato = t + d.preparazioneMs / furia; // infuriato si prepara più in fretta
@@ -141,7 +168,8 @@ function aggiornaTiratore(scena, n, t) {
     n.setFillStyle(Math.floor(t / 70) % 2 === 0 ? 0xffffff : n.colore);
     if (t >= n.fineStato) {
       n.setFillStyle(n.colore);
-      const angolo = Phaser.Math.Angle.Between(n.x, n.y, g.x, g.y);
+      const mira = bersaglioDi(scena, n);
+      const angolo = Phaser.Math.Angle.Between(n.x, n.y, mira.x, mira.y);
       sparaProiettileDa(scena, n.x, n.y, angolo, d.velocitaProiettile, Math.round(d.dannoProiettile * n.moltDanno));
       n.stato = 'muove';
       n.prossimoTiro = t + d.cadenzaMs / furia;
@@ -189,7 +217,8 @@ function aggiornaMortaio(scena, n, t) {
   }
 
   if (t >= n.prossimoTiro && distanza < ideale + 250) {
-    creaZona(scena, g.x, g.y, d.raggio, d.ritardoMs, Math.round(d.dannoEsplosione * n.moltDanno));
+    const mira = bersaglioDi(scena, n);
+    creaZona(scena, mira.x, mira.y, d.raggio, d.ritardoMs, Math.round(d.dannoEsplosione * n.moltDanno));
     n.prossimoTiro = t + d.cadenzaMs / furia;
     // Piccolo rinculo visivo
     n.setFillStyle(0xffffff);

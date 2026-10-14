@@ -62,7 +62,12 @@ class GestoreRound {
     const centro = this.scena.arena.puntoComparsa(g.x, g.y, ONDATE.distanzaComparsaMin, ONDATE.distanzaComparsaMax);
     for (let i = 0; i < grandezza; i++) {
       const p = this.scena.arena.limita(centro.x + Phaser.Math.Between(-50, 50), centro.y + Phaser.Math.Between(-50, 50));
-      generaNemico(this.scena, this.tipoCasuale(), p.x, p.y);
+      const elite = this.eliteDaGenerare;
+      if (elite) {
+        this.eliteDaGenerare = false;
+        this.scena.interfaccia.mostraBanner('Un nemico d\'élite!');
+      }
+      generaNemico(this.scena, this.tipoCasuale(), p.x, p.y, elite);
     }
   }
 
@@ -118,6 +123,8 @@ class GestoreRound {
     this.inizio = t;
     this.prossimaComparsa = t + 500;
     this.scena.dannoNelRound = false;
+    // Dopo il round 7 di ogni ciclo (e fino al boss) arriva un nemico d'élite
+    this.eliteDaGenerare = this.tipo === 'normale' && this.roundNelCiclo() > ELITE.dopoRound;
 
     if (this.tipo === 'boss') {
       generaBoss(this.scena, 'boss');
