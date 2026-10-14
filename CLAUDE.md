@@ -8,3 +8,5 @@
 - File piccoli e separati per argomento (giocatore, nemici, abilità, interfaccia).
 - Personaggi, nomi e storia originali: solo l'atmosfera è ispirata a Elden Ring.
 - Il gioco è pubblicato con GitHub Pages dal ramo `main`.
+- GitHub Pages tiene i file in cache 10 minuti: a ogni modifica di un .js aumenta il `?v=` di TUTTI gli script in `index.html`.
+- Dopo ogni push, aprire https://yeppama.github.io/gioco/ e controllare la console prima di dire a Stefano di giocare.
