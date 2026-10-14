@@ -188,9 +188,9 @@ function aggiornaTiratore(scena, n, t) {
   // così il round non si allunga all'infinito
   const ideale = furia > 1 ? 0 : d.distanzaIdeale;
   const v = velocitaNemico(scena, n, d.velocita, t);
-  if (distanza > ideale + 40) {
+  if (distanza > ideale + d.tolleranza) {
     insegui(scena, n, v);
-  } else if (distanza < ideale - 40) {
+  } else if (distanza < ideale - d.tolleranza) {
     const angolo = Phaser.Math.Angle.Between(g.x, g.y, n.x, n.y); // dal giocatore verso il nemico = scappa
     n.body.setVelocity(Math.cos(angolo) * v, Math.sin(angolo) * v);
   } else {
@@ -198,7 +198,7 @@ function aggiornaTiratore(scena, n, t) {
   }
 
   // Spara solo se non è troppo lontano
-  if (t >= n.prossimoTiro && distanza < ideale + 150) {
+  if (t >= n.prossimoTiro && distanza < ideale + d.distanzaTiro) {
     n.stato = 'mira';
     n.fineStato = t + d.preparazioneTiroMs;
   }
@@ -214,16 +214,16 @@ function aggiornaMortaio(scena, n, t) {
   const ideale = furia > 1 ? 0 : d.distanzaIdeale; // infuriato ti viene addosso
   const v = velocitaNemico(scena, n, d.velocita, t);
 
-  if (distanza > ideale + 60) {
+  if (distanza > ideale + d.tolleranza) {
     insegui(scena, n, v);
-  } else if (distanza < ideale - 60) {
+  } else if (distanza < ideale - d.tolleranza) {
     const angolo = Phaser.Math.Angle.Between(g.x, g.y, n.x, n.y);
     n.body.setVelocity(Math.cos(angolo) * v, Math.sin(angolo) * v);
   } else {
     n.body.setVelocity(0, 0);
   }
 
-  if (t >= n.prossimoTiro && distanza < ideale + 250) {
+  if (t >= n.prossimoTiro && distanza < ideale + d.distanzaTiro) {
     const mira = bersaglioDi(scena, n);
     creaZona(scena, mira.x, mira.y, d.raggio, d.ritardoMs, Math.round(d.dannoEsplosione * n.moltDanno));
     n.prossimoTiro = t + d.cadenzaMs / (furia * n.aggressivita);

@@ -12,6 +12,13 @@
 // la logica della partita legge solo le statistiche finali.
 // ============================================================
 
+// Piccoli aiuti per scrivere le descrizioni (usati anche da lingua.js e benedizioni.js)
+const percentuale = (x) => Math.round(x * 100);   // 0.35 -> 35
+const secondi = (ms) => ms / 1000;                // 2000 -> 2
+const NA = NUMERI_ABILITA;                        // abbreviazione: i numeri stanno in config.js
+const ricaricaScudoS = (liv) => NA.scudo.baseS - NA.scudo.menoPerLivelloS * liv;
+const rallentamentoGelo = (liv) => NA.gelo.base + NA.gelo.perLivello * liv;
+
 const ABILITA = [
   // --- Attacco ---
   {
@@ -36,31 +43,31 @@ const ABILITA = [
   },
   {
     id: 'corda', nome: 'Corda tesa', max: 3,
-    descrizione: () => 'Spari il 15% più velocemente',
-    applica: (s, liv) => { s.cadenzaMs *= Math.pow(0.85, liv); },
+    descrizione: () => 'Spari il ' + percentuale(1 - NA.corda.cadenza) + '% più velocemente',
+    applica: (s, liv) => { s.cadenzaMs *= Math.pow(NA.corda.cadenza, liv); },
   },
 
   {
     id: 'casino', nome: 'Casinò', max: 3,
-    descrizione: (liv) => [15, 40, 60][liv - 1] + '% di probabilità che un colpo non consumi frecce',
-    applica: (s, liv) => { s.frecciaGratis = Math.max(s.frecciaGratis, [0.15, 0.4, 0.6][liv - 1]); },
+    descrizione: (liv) => percentuale(NA.casino.gratis[liv - 1]) + '% di probabilità che un colpo non consumi frecce',
+    applica: (s, liv) => { s.frecciaGratis = Math.max(s.frecciaGratis, NA.casino.gratis[liv - 1]); },
   },
   {
     id: 'manirapide', nome: 'Mani rapide', max: 3,
-    descrizione: () => 'La ricarica dura il 15% in meno',
-    applica: (s, liv) => { s.ricaricaMs *= Math.pow(0.85, liv); },
+    descrizione: () => 'La ricarica dura il ' + percentuale(1 - NA.manirapide.ricarica) + '% in meno',
+    applica: (s, liv) => { s.ricaricaMs *= Math.pow(NA.manirapide.ricarica, liv); },
   },
 
   // --- Elementali ed evocazioni ---
   {
     id: 'fuoco', nome: 'Frecce infuocate', max: 3,
-    descrizione: (liv) => 'I nemici colpiti bruciano: ' + (3 * liv) + ' danni ogni mezzo secondo per 3 secondi',
-    applica: (s, liv) => { s.fuocoDanno = 3 * liv; },
+    descrizione: (liv) => 'I nemici colpiti bruciano: ' + NA.fuoco.dannoPerLivello * liv + ' danni ogni ' + secondi(INTERVALLO_FUOCO_MS) + ' s per ' + secondi(DURATA_FUOCO_MS) + ' s',
+    applica: (s, liv) => { s.fuocoDanno = NA.fuoco.dannoPerLivello * liv; },
   },
   {
     id: 'gelo', nome: 'Frecce di brina', max: 3,
-    descrizione: (liv) => 'I nemici colpiti rallentano del ' + (20 + 10 * liv) + '% per 2 secondi (metà sui boss)',
-    applica: (s, liv) => { s.geloRallenta = 0.2 + 0.1 * liv; },
+    descrizione: (liv) => 'I nemici colpiti rallentano del ' + percentuale(rallentamentoGelo(liv)) + '% per ' + secondi(DURATA_GELO_MS) + ' s (metà sui boss)',
+    applica: (s, liv) => { s.geloRallenta = rallentamentoGelo(liv); },
   },
   {
     id: 'lame', nome: 'Lame orbitanti', max: 3, rarita: 'rara',
@@ -71,23 +78,23 @@ const ABILITA = [
   // --- Difesa ---
   {
     id: 'vigore', nome: 'Vigore', max: 5,
-    descrizione: () => '+20 vita massima, e ti cura di 20',
-    applica: (s, liv) => { s.vitaMax += 20 * liv; },
+    descrizione: () => '+' + NA.vigore.vita + ' vita massima, e ti cura di ' + NA.vigore.vita,
+    applica: (s, liv) => { s.vitaMax += NA.vigore.vita * liv; },
   },
   {
     id: 'rigenerazione', nome: 'Rigenerazione', max: 3,
-    descrizione: (liv) => 'Recuperi ' + liv + ' vita ogni 2 secondi',
-    applica: (s, liv) => { s.rigenerazione += liv; },
+    descrizione: (liv) => 'Recuperi ' + NA.rigenerazione.vitaPerLivello * liv + ' vita ogni ' + secondi(INTERVALLO_RIGENERAZIONE_MS) + ' s',
+    applica: (s, liv) => { s.rigenerazione += NA.rigenerazione.vitaPerLivello * liv; },
   },
   {
     id: 'scudo', nome: 'Scudo spirituale', max: 3,
-    descrizione: (liv) => 'Blocca un colpo; si ricarica in ' + (12 - 3 * liv) + ' secondi',
-    applica: (s, liv) => { s.scudoMs = (12 - 3 * liv) * 1000; },
+    descrizione: (liv) => 'Blocca un colpo; si ricarica in ' + ricaricaScudoS(liv) + ' secondi',
+    applica: (s, liv) => { s.scudoMs = ricaricaScudoS(liv) * 1000; },
   },
   {
     id: 'passo', nome: 'Passo leggero', max: 2,
-    descrizione: () => 'La schivata costa 2 frecce in meno',
-    applica: (s, liv) => { s.costoSchivata -= 2 * liv; },
+    descrizione: () => 'La schivata costa ' + NA.passo.frecce + ' frecce in meno',
+    applica: (s, liv) => { s.costoSchivata -= NA.passo.frecce * liv; },
   },
 ];
 
@@ -99,8 +106,8 @@ const COMBINAZIONI = [
   {
     id: 'ventofortuna', nome: 'Vento della fortuna', max: 1, rarita: 'combinazione',
     requisiti: { casino: 3, passo: 2 },
-    descrizione: () => '75% di colpi gratis e un tiro circolare ogni 7 s (più spesso con più frecce nella faretra)',
-    applica: (s) => { s.frecciaGratis = Math.max(s.frecciaGratis, 0.75); s.tiroCircolare = true; },
+    descrizione: () => percentuale(NA.ventofortuna.gratis) + '% di colpi gratis e un tiro circolare ogni ' + TIRO_CIRCOLARE.tempi[0][1] + ' s (più spesso con più frecce nella faretra)',
+    applica: (s) => { s.frecciaGratis = Math.max(s.frecciaGratis, NA.ventofortuna.gratis); s.tiroCircolare = true; },
   },
 ];
 

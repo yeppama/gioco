@@ -58,11 +58,11 @@ const METODI_PROGRESSI = {
   // Apre la schermata "scegli 1 tra 3" e mette in pausa la partita
   apriScelta(voce) {
     const tabelle = { abilita: ABILITA, maledetta: MALEDETTE, divina: DIVINE, premio: PREMI };
-    const opzioni = estraiOpzioni(this.livelliAbilita, 3, tabelle[voce.tipo]);
+    const opzioni = estraiOpzioni(this.livelliAbilita, CARTE_PER_SCELTA, tabelle[voce.tipo]);
     // Se una combinazione è pronta, prende il posto della terza carta
     if (voce.tipo === 'abilita') {
       const combo = combinazioniPronte(this.livelliAbilita)[0];
-      if (combo) opzioni.splice(2, 1, { id: combo.id, nome: nomeDi(combo), livello: 1, rarita: 'combinazione', descrizione: descrizioneDi(combo, 1) });
+      if (combo) opzioni.splice(CARTE_PER_SCELTA - 1, 1, { id: combo.id, nome: nomeDi(combo), livello: 1, rarita: 'combinazione', descrizione: descrizioneDi(combo, 1) });
     }
     if (opzioni.length === 0) return; // tutto già al massimo
     this.giocatore.body.setVelocity(0, 0);

@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=24`, ~3600 righe di JavaScript in 24 file più la prova automatica.
+Stato: ottobre 2026, versione script `?v=25`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
@@ -160,7 +160,8 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
 
 ## 5. Regole del codice (riassunto di `CLAUDE.md` più quelle emerse col lavoro)
 
-- **Numeri solo in `config.js`.** Nuove meccaniche → nuova voce in config, con un commento.
+- **Numeri solo in `config.js`.** Nuove meccaniche → nuova voce in config, con un commento. La descrizione
+  della carta deve leggere lo stesso numero (mai scriverlo a mano nel testo), sia in italiano sia in `VOCI_EN`.
 - **Scritte visibili solo con `tr('chiave')`** (`tr`, non `t`: `t` è il tempo). Nuove abilità o benedizioni:
   descrizione italiana nel file dati **e** voce inglese in `VOCI_EN`. Nuove fonti di danno: chiave `fonte.<Nome>`.
 - Comandi solo in `controlli.js`.
@@ -192,17 +193,20 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
    regola speciale (es. Seconda vita che si attiva una sola volta), e una prova del menu pausa e della lingua.
 2. ~~`partita.js` troppo grande~~ fatto: diviso in `vita.js`, `combattimento.js`, `progressi.js`.
    `prendiAbilita` ora ignora le voci già al massimo (la prova aveva trovato Casinò al livello 4 = NaN).
-3. **Numeri ancora sparsi** che violano la regola di `config.js`: `boss.js` (distanza di comparsa 300–380,
-   schivata del boss furbo 520/220/1100/160, primo attacco 1500), `abilita.js` (15%, 20 di Vigore,
-   scudo 12−3·liv, rogo 3·liv, gelo 20+10·liv, Casinò [15,40,60]), `interfaccia.js` (larghezza della barra
-   del boss 360, tempi dei banner).
+3. ~~Numeri sparsi~~ fatto: abilità (`NUMERI_ABILITA`), boss (`BOSS_COMUNI`, `BOSS_FURBO`, evocazione e
+   secondo anello in `BOSS`), muri e margini dell'arena (`ARENA`), gruppi (`ONDATE`), distanze di tiro di
+   tiratore e mortaio (`TIPI_NEMICO`), mini boss a sorpresa (`SCALA_PERFETTI`), carte per scelta
+   (`CARTE_PER_SCELTA`). Le descrizioni delle carte leggono gli stessi numeri, in italiano e in inglese.
+   Restano nel codice, di proposito, solo i numeri **grafici** (durata di lampi e tween, colori, posizioni
+   dell'HUD): non cambiano il bilanciamento.
 4. **Testi duplicati**: le descrizioni italiane stanno nei file dati, quelle inglesi in `VOCI_EN`.
    Meglio mettere entrambe in `lingua.js` (o tutte e due nei dati) per non dimenticarne una.
 5. **Effetti grafici che creano e distruggono oggetti** a ogni colpo (lampo bianco con `delayedCall` in
    `colpisciNemico`, cerchi della scia a ogni fotogramma, esplosioni, saette). Con tanti nemici conviene un
    piccolo riuso (pool) o meno oggetti (es. un punto di scia ogni 2–3 fotogrammi).
-6. **Variabili globali dai nomi corti**: `B` e `perc` in `benedizioni.js`. Rinominarle (`NUM_BENEDIZIONI`,
-   `percentuale`) per evitare collisioni future.
+6. ~~Variabili globali dai nomi corti~~ fatto: `B` e `perc` tolti. In `abilita.js` ci sono gli aiuti
+   globali `percentuale`, `secondi`, `NA` (= `NUMERI_ABILITA`), `ricaricaScudoS`, `rallentamentoGelo`.
+   Attenzione: due `const` globali con lo stesso nome in due file diversi bloccano tutto il gioco.
 7. Le **chiavi delle fonti di danno** sono in italiano (`'Frecce'`, `'Fuoco'`…) e servono anche da chiave di
    traduzione: funziona, ma un id neutro (`'frecce'`) sarebbe più pulito.
 8. Il **menu pausa** non mostra le regole speciali attive (bonus attuale di Sete di battaglia, Seconda vita

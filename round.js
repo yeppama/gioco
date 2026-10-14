@@ -67,7 +67,8 @@ class GestoreRound {
     const g = this.scena.giocatore;
     const centro = this.scena.arena.puntoComparsa(g.x, g.y, ONDATE.distanzaComparsaMin, ONDATE.distanzaComparsaMax);
     for (let i = 0; i < grandezza; i++) {
-      const p = this.scena.arena.limita(centro.x + Phaser.Math.Between(-50, 50), centro.y + Phaser.Math.Between(-50, 50));
+      const p = this.scena.arena.limita(centro.x + Phaser.Math.Between(-ONDATE.spargimentoGruppo, ONDATE.spargimentoGruppo),
+        centro.y + Phaser.Math.Between(-ONDATE.spargimentoGruppo, ONDATE.spargimentoGruppo));
       const elite = this.eliteDaGenerare;
       if (elite) {
         this.eliteDaGenerare = false;
@@ -150,7 +151,7 @@ class GestoreRound {
     this.tipo = this.tipoDelRound(this.numero);
     this.fase = 'combattimento';
     this.inizio = t;
-    this.prossimaComparsa = t + 500;
+    this.prossimaComparsa = t + ONDATE.primoGruppoMs;
     this.scena.dannoNelRound = false;
     this.scena.seteBonus = 0; // Sete di battaglia: il bonus vale solo per un round
     this.moltExtra = 1;
@@ -172,7 +173,7 @@ class GestoreRound {
       return;
     }
     if (evento === 'difficile') this.moltExtra = SCALA_PERFETTI.moltDifficile;
-    if (evento === 'miniboss' && this.tipo === 'normale') this.minibossA = t + Phaser.Math.Between(4000, 12000);
+    if (evento === 'miniboss' && this.tipo === 'normale') this.minibossA = t + Phaser.Math.Between(SCALA_PERFETTI.minibossDopoMinMs, SCALA_PERFETTI.minibossDopoMaxMs);
 
     // Dopo il round 7 di ogni ciclo (e fino al boss) arriva un nemico d'élite
     this.eliteDaGenerare = this.tipo === 'normale' && this.roundNelCiclo() > ELITE.dopoRound;

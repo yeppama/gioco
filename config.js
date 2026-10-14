@@ -17,6 +17,10 @@ const ARENA = {
   latoOstacoloMax: 100,
   distanzaTraOstacoli: 110, // spazio minimo tra due ostacoli, così si passa sempre
   zonaLiberaCentro: 180,    // niente ostacoli vicino al punto di partenza
+  margineBordo: 150,        // niente ostacoli troppo vicino ai bordi
+  muroLunghezzaMin: 160,    // muri lunghi (dal ciclo TERRENI.muriDalCiclo)
+  muroLunghezzaMax: 260,
+  muroSpessore: 36,
 };
 
 // Giocatore (valori di partenza: le abilità li modificano, vedi statistiche.js)
@@ -60,6 +64,8 @@ const SCALA_PERFETTI = {
   bossFurboA: 9,        // a 9: un boss che legge i movimenti e schiva, poi doppio mini boss
   premioA: 10,          // a 10: due benedizioni divine e salto in avanti
   salto: 20,            // round saltati
+  minibossDopoMinMs: 4000,  // il mini boss "a sorpresa" arriva tra 4 e 12 s dall'inizio del round
+  minibossDopoMaxMs: 12000,
 };
 
 // Colpo caricato (Spazio o pulsante sul telefono): tenendo premuto l'arco smette
@@ -123,6 +129,23 @@ const PESI_RARITA = { comune: 10, rara: 4, leggendaria: 1 };
 const RIPOSO_CURA = 0.2;   // la quarta opzione delle maledette: cura il 20% della vita
 const PREMIO = { cura: 0.3, vitaMax: 0.1, frecce: 4, velocita: 0.1 };
 const PREMI_SALTATI_PER_MALEDETTA = 2; // saltando 2 premi si ottiene un potere maledetto
+
+// Carte proposte a ogni scelta (abilità, benedizioni, premi)
+const CARTE_PER_SCELTA = 3;
+
+// Numeri delle abilità (usati sia dall'effetto sia dalla descrizione sulla carta)
+const NUMERI_ABILITA = {
+  corda: { cadenza: 0.85 },               // a ogni livello spari il 15% più spesso
+  casino: { gratis: [0.15, 0.4, 0.6] },   // probabilità di colpo gratis per livello
+  manirapide: { ricarica: 0.85 },         // a ogni livello la ricarica dura il 15% in meno
+  fuoco: { dannoPerLivello: 3 },
+  gelo: { base: 0.2, perLivello: 0.1 },   // rallentamento: 30%, 40%, 50%
+  vigore: { vita: 20 },
+  rigenerazione: { vitaPerLivello: 1 },   // vita ogni INTERVALLO_RIGENERAZIONE_MS
+  scudo: { baseS: 12, menoPerLivelloS: 3 }, // ricarica dello scudo: 9, 6, 3 secondi
+  passo: { frecce: 2 },                   // frecce in meno per schivata, a livello
+  ventofortuna: { gratis: 0.75 },
+};
 
 // Numeri delle benedizioni (maledette e divine), una voce per benedizione
 const BENEDIZIONI = {
@@ -201,6 +224,8 @@ const ONDATE = {
   maxNemiciInsieme: 20,       // mai più di così in campo
   distanzaComparsaMin: 420,   // i gruppi compaiono fuori dallo schermo...
   distanzaComparsaMax: 650,   // ...ma non troppo lontano
+  spargimentoGruppo: 50,      // quanto sono sparsi i nemici di un gruppo attorno al suo centro
+  primoGruppoMs: 500,         // il primo gruppo arriva poco dopo l'inizio del round
 };
 // Da quale round compare ogni tipo, e quanto è frequente (peso più alto = più frequente)
 const COMPARSA_TIPI = [
@@ -228,11 +253,26 @@ const BOSS = {
   pausaTraAttacchiMs: 1400,
   carica: { preparazioneMs: 800, velocita: 480, durataMs: 700 },
   anello: { preparazioneMs: 700, proiettili: 14, velocita: 200, danno: 15 },
-  evocazione: { preparazioneMs: 900, quanti: 3 },
+  evocazione: { preparazioneMs: 900, quanti: 3, distanza: 70, exp: 2 }, // gli evocati danno poca esperienza
   // Pioggia: cerchi rossi attorno a te che esplodono poco dopo (chi resta fermo li prende)
   pioggia: { preparazioneMs: 500, zone: 5, raggio: 60, spargimento: 140, ritardoMs: 1000, danno: 20 },
   // Dal secondo ciclo, sotto metà vita: attacca più spesso e gli anelli sono doppi
-  faseExtra: { sogliaVita: 0.5, pausaTraAttacchiMs: 900, colore: 0x9a4a3a },
+  faseExtra: { sogliaVita: 0.5, pausaTraAttacchiMs: 900, colore: 0x9a4a3a, ritardoSecondoAnelloMs: 300 },
+};
+
+// Valori comuni a boss e mini boss
+const BOSS_COMUNI = {
+  comparsaMin: 300, comparsaMax: 380, // distanza dal giocatore a cui compaiono
+  primoAttaccoMs: 1500,               // il primo attacco arriva dopo questo tempo
+};
+
+// Boss "furbo" (9 round senza danni): più vita, e schiva le frecce che gli arrivano addosso
+const BOSS_FURBO = {
+  vita: 1.5,
+  distanzaAllarme: 160,   // reagisce alle frecce più vicine di così
+  velocitaSchivata: 520,
+  durataSchivataMs: 220,
+  pausaSchivateMs: 1100,  // tra una schivata e l'altra: è il momento per colpirlo
 };
 
 // Mini boss (round 7, 14, 21...): in futuro lascerà anche amuleti e strumenti
@@ -286,6 +326,8 @@ const TIPI_NEMICO = {
   tiratore: {
     vita: 25, velocita: 90, danno: 10, lato: 26, colore: 0x9b59d0, exp: 10,
     distanzaIdeale: 260,      // la distanza a cui cerca di stare
+    tolleranza: 40,           // entro ±40 px dalla distanza ideale resta fermo
+    distanzaTiro: 150,        // spara solo se sei entro distanzaIdeale + questo
     cadenzaMs: 2200,          // ogni quanto spara
     preparazioneTiroMs: 350,  // lampeggia prima di sparare
     velocitaProiettile: 220,
@@ -295,6 +337,8 @@ const TIPI_NEMICO = {
   mortaio: {
     vita: 30, velocita: 60, danno: 10, lato: 30, colore: 0x8a6d3b, exp: 10,
     distanzaIdeale: 340,
+    tolleranza: 60,
+    distanzaTiro: 250,
     cadenzaMs: 3000,      // ogni quanto bombarda
     raggio: 55,           // grandezza del cerchio
     ritardoMs: 1100,      // tempo tra il cerchio rosso e l'esplosione: il tuo tempo per spostarti

@@ -38,13 +38,13 @@ class Arena {
     const quanti = Math.round((this.l * this.a) / ARENA.areaPerOstacolo);
     for (let tentativo = 0; tentativo < quanti * 30 && this.datiOstacoli.length < quanti; tentativo++) {
       const muro = ciclo >= TERRENI.muriDalCiclo && Math.random() < TERRENI.quotaMuri;
-      const lungo = Phaser.Math.Between(160, 260);
+      const lungo = Phaser.Math.Between(ARENA.muroLunghezzaMin, ARENA.muroLunghezzaMax);
       const orizzontale = Math.random() < 0.5;
       const o = {
-        l: muro ? (orizzontale ? lungo : 36) : Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
-        a: muro ? (orizzontale ? 36 : lungo) : Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
-        x: Phaser.Math.Between(150, this.l - 150),
-        y: Phaser.Math.Between(150, this.a - 150),
+        l: muro ? (orizzontale ? lungo : ARENA.muroSpessore) : Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
+        a: muro ? (orizzontale ? ARENA.muroSpessore : lungo) : Phaser.Math.Between(ARENA.latoOstacoloMin, ARENA.latoOstacoloMax),
+        x: Phaser.Math.Between(ARENA.margineBordo, this.l - ARENA.margineBordo),
+        y: Phaser.Math.Between(ARENA.margineBordo, this.a - ARENA.margineBordo),
       };
       if (Phaser.Math.Distance.Between(o.x, o.y, this.l / 2, this.a / 2) < ARENA.zonaLiberaCentro) continue;
       const troppoVicino = this.datiOstacoli.some(altro =>

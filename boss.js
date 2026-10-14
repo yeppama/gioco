@@ -16,7 +16,7 @@
 function generaBoss(scena, tipo) {
   const dati = tipo === 'boss' ? BOSS : MINIBOSS;
   const g = scena.giocatore;
-  const punto = scena.arena.puntoComparsa(g.x, g.y, 300, 380);
+  const punto = scena.arena.puntoComparsa(g.x, g.y, BOSS_COMUNI.comparsaMin, BOSS_COMUNI.comparsaMax);
   const n = scena.add.rectangle(punto.x, punto.y, dati.lato, dati.lato, dati.colore);
   scena.nemici.add(n);
   n.body.setCollideWorldBounds(true);
@@ -28,7 +28,7 @@ function generaBoss(scena, tipo) {
   n.attacchi = tipo === 'boss' ? ['carica', 'pioggia', 'anello', 'evocazione'] : ['ventaglio', 'carica'];
   n.indiceAttacco = 0;
   n.stato = 'avvicina';
-  n.prossimoAttacco = scena.tempo + 1500;
+  n.prossimoAttacco = scena.tempo + BOSS_COMUNI.primoAttaccoMs;
   n.faseExtra = false;
   n.avviso = null;
 
@@ -42,7 +42,7 @@ function generaBoss(scena, tipo) {
 function rendiFurbo(n) {
   n.furbo = true;
   n.elite = true; // usa la mira "predittiva" degli élite (e il bordo dorato)
-  n.vitaMax = Math.round(n.vitaMax * 1.5);
+  n.vitaMax = Math.round(n.vitaMax * BOSS_FURBO.vita);
   n.vita = n.vitaMax;
   n.prossimaSchivata = 0;
   return n;
@@ -56,7 +56,7 @@ function provaASchivare(scena, n, t) {
     const dx = n.x - f.x;
     const dy = n.y - f.y;
     const distanza = Math.hypot(dx, dy);
-    if (distanza > 160) continue;
+    if (distanza > BOSS_FURBO.distanzaAllarme) continue;
     const v = f.body.velocity;
     const velocita = Math.hypot(v.x, v.y) || 1;
     // Sta venendo verso di lui? (e passerebbe abbastanza vicino)
@@ -66,8 +66,8 @@ function provaASchivare(scena, n, t) {
     const lato = Math.random() < 0.5 ? 1 : -1;
     n.dirCarica = { x: -v.y / velocita * lato, y: v.x / velocita * lato };
     n.stato = 'schiva';
-    n.fineStato = t + 220;
-    n.prossimaSchivata = t + 1100;
+    n.fineStato = t + BOSS_FURBO.durataSchivataMs;
+    n.prossimaSchivata = t + BOSS_FURBO.pausaSchivateMs;
     return true;
   }
   return false;
@@ -78,7 +78,7 @@ function aggiornaBoss(scena, n, t) {
   const g = scena.vista(); // dove il boss ti vede
 
   if (n.stato === 'schiva') {
-    n.body.setVelocity(n.dirCarica.x * 520, n.dirCarica.y * 520);
+    n.body.setVelocity(n.dirCarica.x * BOSS_FURBO.velocitaSchivata, n.dirCarica.y * BOSS_FURBO.velocitaSchivata);
     if (t >= n.fineStato) n.stato = 'avvicina';
     return;
   }
@@ -152,7 +152,7 @@ function eseguiAttacco(scena, n, t, pausa) {
     anelloDiProiettili(scena, n, att, danno, 0);
     // Fase extra: un secondo anello sfalsato poco dopo
     if (n.faseExtra) {
-      scena.time.delayedCall(300, () => {
+      scena.time.delayedCall(n.dati.faseExtra.ritardoSecondoAnelloMs, () => {
         if (n.active) anelloDiProiettili(scena, n, att, danno, Math.PI / att.proiettili);
       });
     }
@@ -168,9 +168,9 @@ function eseguiAttacco(scena, n, t, pausa) {
   } else if (n.attaccoCorrente === 'evocazione') {
     for (let i = 0; i < att.quanti; i++) {
       const a = (Math.PI * 2 * i) / att.quanti;
-      const p = scena.arena.limita(n.x + Math.cos(a) * 70, n.y + Math.sin(a) * 70);
+      const p = scena.arena.limita(n.x + Math.cos(a) * att.distanza, n.y + Math.sin(a) * att.distanza);
       const evocato = generaNemico(scena, 'inseguitore', p.x, p.y);
-      evocato.exp = 2; // gli evocati danno poca esperienza, sennò conviene farli evocare all'infinito
+      evocato.exp = att.exp; // gli evocati danno poca esperienza, sennò conviene farli evocare all'infinito
     }
   }
 }
