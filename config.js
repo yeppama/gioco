@@ -3,8 +3,21 @@
 // Cambia questi valori per bilanciare il gioco senza toccare la logica
 // ============================================================
 
-const LARGHEZZA = 800;      // larghezza dell'arena, in pixel
-const ALTEZZA = 600;        // altezza dell'arena, in pixel
+// Lo SCHERMO (quello che vedi) è più piccolo dell'ARENA: la telecamera ti segue
+const LARGHEZZA = 800;      // larghezza dello schermo, in pixel
+const ALTEZZA = 600;        // altezza dello schermo, in pixel
+
+// Arena: dopo ogni boss se ne genera una nuova, più grande
+const ARENA = {
+  larghezzaIniziale: 1200,
+  altezzaIniziale: 900,
+  crescitaPerCiclo: 300,    // pixel in più in larghezza e altezza dopo ogni boss
+  areaPerOstacolo: 110000,  // un ostacolo ogni tanti pixel quadrati (più arena = più ostacoli)
+  latoOstacoloMin: 50,
+  latoOstacoloMax: 100,
+  distanzaTraOstacoli: 110, // spazio minimo tra due ostacoli, così si passa sempre
+  zonaLiberaCentro: 180,    // niente ostacoli vicino al punto di partenza
+};
 
 // Giocatore (valori di partenza: le abilità li modificano, vedi statistiche.js)
 const VELOCITA = 250;       // pixel al secondo
@@ -23,6 +36,17 @@ const LATO_FRECCIA = 8;
 const ANGOLO_VENTAGLIO = 20;     // gradi tra una freccia del ventaglio e la successiva
 const DISTANZA_PARALLELE = 12;   // pixel tra frecce parallele (Freccia doppia)
 
+// Colpo caricato (Spazio o pulsante sul telefono): tenendo premuto l'arco smette
+// di sparare e mette da parte frecce dalla faretra; al rilascio partono tutte insieme
+const COLPO_CARICATO = {
+  intervalloMs: 300,       // ogni quanto si aggiunge una freccia alla carica
+  massimo: 10,             // frecce al massimo in un colpo caricato
+  apertura: 3,             // gradi tra una freccia e l'altra del colpo
+  moltDanno: 1.5,          // ogni freccia del colpo fa il 50% in più
+  perforazioniExtra: 99,   // attraversano tutti i nemici
+  rallentamento: 0.6,      // mentre carichi ti muovi al 60%
+};
+
 // Joystick per il telefono
 const RAGGIO_JOYSTICK = 60;        // quanto si sposta il pomello dal centro, in pixel
 
@@ -30,6 +54,14 @@ const RAGGIO_JOYSTICK = 60;        // quanto si sposta il pomello dal centro, in
 const COSTO_SCHIVATA = 6;          // frecce consumate; con meno frecce non si schiva
 const VELOCITA_SCHIVATA = 700;     // pixel al secondo durante lo scatto
 const DURATA_SCHIVATA_MS = 180;    // durata dello scatto; in questo tempo non si subiscono danni
+
+// Rarità: quanto spesso esce una carta (peso più alto = più frequente)
+const PESI_RARITA = { comune: 10, rara: 4, leggendaria: 1 };
+
+// Benedizioni divine: a fine round senza danni (dal round 3), con una probabilità
+// che si dimezza ogni volta che ne prendi una (100%, 50%, 25%...)
+const DIVINA_DAL_ROUND = 3;
+const RIPOSO_CURA = 0.2;   // la quarta opzione delle maledette: cura il 20% della vita
 
 // Abilità difensive
 const INTERVALLO_RIGENERAZIONE_MS = 2000; // ogni quanto agisce Rigenerazione
@@ -62,20 +94,26 @@ const CRESCITA_EXP = 1.2;
 // Round: per DURATA_ROUND_S secondi arrivano nemici sempre più spesso.
 // Poi smettono di arrivare, ma il round finisce solo quando li hai uccisi tutti:
 // nel frattempo quelli rimasti si infuriano e diventano sempre più veloci.
-const DURATA_ROUND_S = 45;
-const PAUSA_TRA_ROUND_MS = 3000;
-const FURIA_PER_SECONDO = 0.08;  // dopo i 45 s: +8% di velocità ogni secondo
+const DURATA_ROUND_S = 30;
+const PAUSA_TRA_ROUND_MS = 2500;
+const FURIA_PER_SECONDO = 0.08;  // dopo il tempo: +8% di velocità ogni secondo
 const FURIA_MASSIMA = 2.5;       // al massimo 2,5 volte più veloci
+// I nemici arrivano a GRUPPI, ognuno da una direzione diversa
 const ONDATE = {
-  intervalloInizialeMs: 2500, // nel primo round di ogni ciclo compare un nemico ogni 2,5 secondi
-  riduzionePerRoundMs: 200,   // ogni round compaiono un po' più spesso
-  intervalloMinimoMs: 900,
-  maxNemiciInsieme: 12,       // mai più di così in campo
+  intervalloInizialeMs: 3500, // nel primo round di ogni ciclo un gruppo ogni 3,5 secondi
+  riduzionePerRoundMs: 200,   // ogni round i gruppi arrivano un po' più spesso
+  intervalloMinimoMs: 1800,
+  gruppoMinimo: 2,            // nemici per gruppo all'inizio del ciclo
+  gruppoMassimo: 5,
+  maxNemiciInsieme: 20,       // mai più di così in campo
+  distanzaComparsaMin: 420,   // i gruppi compaiono fuori dallo schermo...
+  distanzaComparsaMax: 650,   // ...ma non troppo lontano
 };
 // Da quale round compare ogni tipo, e quanto è frequente (peso più alto = più frequente)
 const COMPARSA_TIPI = [
   { tipo: 'inseguitore', daRound: 1, peso: 5 },
   { tipo: 'caricatore', daRound: 2, peso: 2 },
+  { tipo: 'mortaio', daRound: 2, peso: 2 },
   { tipo: 'tiratore', daRound: 3, peso: 2 },
 ];
 
@@ -95,11 +133,14 @@ const BOSS = {
   carica: { preparazioneMs: 800, velocita: 480, durataMs: 700 },
   anello: { preparazioneMs: 700, proiettili: 14, velocita: 200, danno: 15 },
   evocazione: { preparazioneMs: 900, quanti: 3 },
+  // Pioggia: cerchi rossi attorno a te che esplodono poco dopo (chi resta fermo li prende)
+  pioggia: { preparazioneMs: 500, zone: 5, raggio: 60, spargimento: 140, ritardoMs: 1000, danno: 20 },
   // Dal secondo ciclo, sotto metà vita: attacca più spesso e gli anelli sono doppi
   faseExtra: { sogliaVita: 0.5, pausaTraAttacchiMs: 900, colore: 0x9a4a3a },
 };
 
-// Mini boss (round 7, 14, 21...): in futuro lascerà amuleti e strumenti
+// Mini boss (round 7, 14, 21...): in futuro lascerà anche amuleti e strumenti
+// Quando muore lascia una benedizione maledetta
 const MINIBOSS = {
   nome: 'La Sentinella Spezzata',
   vita: 700, velocita: 95, danno: 20, lato: 48, colore: 0x5f8f7a, exp: 60,
@@ -130,22 +171,17 @@ const TIPI_NEMICO = {
     velocitaProiettile: 220,
     dannoProiettile: 10,
   },
+  // Lento e lontano: bombarda il punto dove sei. Chi resta fermo viene colpito
+  mortaio: {
+    vita: 30, velocita: 60, danno: 10, lato: 30, colore: 0x8a6d3b, exp: 10,
+    distanzaIdeale: 340,
+    cadenzaMs: 3000,      // ogni quanto bombarda
+    raggio: 55,           // grandezza del cerchio
+    ritardoMs: 1100,      // tempo tra il cerchio rosso e l'esplosione: il tuo tempo per spostarti
+    dannoEsplosione: 15,
+  },
 };
-const DISTANZA_MIN_COMPARSA = 250;    // un nemico non compare mai più vicino di così al giocatore
-const PUNTI_COMPARSA = [
-  { x: 40, y: 100 }, { x: 400, y: 40 }, { x: 760, y: 40 },
-  { x: 40, y: 300 }, { x: 760, y: 300 },
-  { x: 40, y: 560 }, { x: 400, y: 560 }, { x: 760, y: 560 },
-];
 
 // Percorsi dei nemici (flow field): l'arena è divisa in caselle
 const CELLA_FLOW = 40;       // grandezza di una casella, in pixel
 const MARGINE_FLOW = 17;     // spazio lasciato attorno agli ostacoli (metà del nemico più grande)
-
-// Ostacoli: x e y sono il centro, l e a larghezza e altezza
-const OSTACOLI = [
-  { x: 200, y: 160, l: 60, a: 60 },
-  { x: 600, y: 160, l: 60, a: 60 },
-  { x: 200, y: 440, l: 60, a: 60 },
-  { x: 600, y: 440, l: 60, a: 60 },
-];

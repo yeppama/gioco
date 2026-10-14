@@ -10,11 +10,14 @@
 //  - anello: proiettili in tutte le direzioni
 //  - ventaglio: proiettili a ventaglio verso il giocatore
 //  - evocazione: fa comparire nemici attorno a sé
+//  - pioggia: cerchi rossi attorno al giocatore che esplodono poco dopo
 // ============================================================
 
 function generaBoss(scena, tipo) {
   const dati = tipo === 'boss' ? BOSS : MINIBOSS;
-  const n = scena.add.rectangle(LARGHEZZA / 2, 90, dati.lato, dati.lato, dati.colore);
+  const g = scena.giocatore;
+  const punto = scena.arena.puntoComparsa(g.x, g.y, 300, 380);
+  const n = scena.add.rectangle(punto.x, punto.y, dati.lato, dati.lato, dati.colore);
   scena.nemici.add(n);
   n.body.setCollideWorldBounds(true);
   n.body.pushable = false; // gli altri nemici non lo spostano
@@ -22,7 +25,7 @@ function generaBoss(scena, tipo) {
   preparaNemico(scena, n, tipo, dati, scena.round.moltiplicatore());
   n.eBoss = true;
   n.moltVelocita = 1; // i boss non accelerano con i round: diventano solo più resistenti
-  n.attacchi = tipo === 'boss' ? ['carica', 'anello', 'evocazione'] : ['ventaglio', 'carica'];
+  n.attacchi = tipo === 'boss' ? ['carica', 'pioggia', 'anello', 'evocazione'] : ['ventaglio', 'carica'];
   n.indiceAttacco = 0;
   n.stato = 'avvicina';
   n.prossimoAttacco = scena.tempo + 1500;
@@ -86,7 +89,7 @@ function iniziaAttacco(scena, n, t) {
     const lunghezza = att.velocita * att.durataMs / 1000;
     n.avviso = scena.add.rectangle(n.x, n.y, lunghezza, n.dati.lato * 0.8, 0xff4444, 0.25)
       .setOrigin(0, 0.5).setRotation(angolo).setDepth(-1);
-  } else if (n.attaccoCorrente === 'anello' || n.attaccoCorrente === 'evocazione') {
+  } else if (n.attaccoCorrente === 'anello' || n.attaccoCorrente === 'evocazione' || n.attaccoCorrente === 'pioggia') {
     // Un cerchio rosso che si allarga attorno al boss
     n.avviso = scena.add.circle(n.x, n.y, n.dati.lato / 2).setStrokeStyle(3, 0xff4444, 0.7).setDepth(-1);
     scena.tweens.add({ targets: n.avviso, scale: 3, duration: att.preparazioneMs });
@@ -111,6 +114,8 @@ function eseguiAttacco(scena, n, t, pausa) {
         if (n.active) anelloDiProiettili(scena, n, att, danno, Math.PI / att.proiettili);
       });
     }
+  } else if (n.attaccoCorrente === 'pioggia') {
+    pioggiaDiColpi(scena, att, danno);
   } else if (n.attaccoCorrente === 'ventaglio') {
     const centro = Phaser.Math.Angle.Between(n.x, n.y, scena.giocatore.x, scena.giocatore.y);
     const apertura = Phaser.Math.DegToRad(att.apertura);
@@ -120,14 +125,22 @@ function eseguiAttacco(scena, n, t, pausa) {
     }
   } else if (n.attaccoCorrente === 'evocazione') {
     for (let i = 0; i < att.quanti; i++) {
-      const evocato = generaNemico(scena, 'inseguitore');
       const a = (Math.PI * 2 * i) / att.quanti;
-      evocato.body.reset(
-        Phaser.Math.Clamp(n.x + Math.cos(a) * 70, 30, LARGHEZZA - 30),
-        Phaser.Math.Clamp(n.y + Math.sin(a) * 70, 30, ALTEZZA - 30),
-      );
+      const p = scena.arena.limita(n.x + Math.cos(a) * 70, n.y + Math.sin(a) * 70);
+      const evocato = generaNemico(scena, 'inseguitore', p.x, p.y);
       evocato.exp = 2; // gli evocati danno poca esperienza, sennò conviene farli evocare all'infinito
     }
+  }
+}
+
+// La prima zona cade esattamente dove sei: restare fermi è la cosa peggiore
+function pioggiaDiColpi(scena, att, danno) {
+  const g = scena.giocatore;
+  for (let i = 0; i < att.zone; i++) {
+    const x = i === 0 ? g.x : g.x + Phaser.Math.Between(-att.spargimento, att.spargimento);
+    const y = i === 0 ? g.y : g.y + Phaser.Math.Between(-att.spargimento, att.spargimento);
+    const p = scena.arena.limita(x, y);
+    creaZona(scena, p.x, p.y, att.raggio, att.ritardoMs, danno);
   }
 }
 

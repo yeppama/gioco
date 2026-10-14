@@ -1,7 +1,8 @@
 // ============================================================
 // ROUND - il ritmo della partita
 //
-// Round normale: per DURATA_ROUND_S secondi compaiono nemici.
+// Round normale: per DURATA_ROUND_S secondi compaiono GRUPPI di nemici,
+// ognuno da una direzione diversa, fuori dallo schermo.
 // Poi smettono di arrivare, ma il round finisce solo quando sono
 // tutti morti: intanto quelli rimasti si infuriano (più veloci).
 //
@@ -51,7 +52,21 @@ class GestoreRound {
     return Math.min(FURIA_MASSIMA, 1 + FURIA_PER_SECONDO * (t - this.inizioFuria) / 1000);
   }
 
-  // Millisecondi tra un nemico e il successivo in questo round
+  // Un gruppo di nemici vicini tra loro, in un punto fuori dallo schermo.
+  // I gruppi crescono man mano che si avanza nel ciclo.
+  generaGruppo(nemiciVivi) {
+    const posti = ONDATE.maxNemiciInsieme - nemiciVivi;
+    const grandezza = Math.min(posti, ONDATE.gruppoMassimo, ONDATE.gruppoMinimo + Math.floor((this.roundNelCiclo() - 1) / 3));
+    if (grandezza <= 0) return;
+    const g = this.scena.giocatore;
+    const centro = this.scena.arena.puntoComparsa(g.x, g.y, ONDATE.distanzaComparsaMin, ONDATE.distanzaComparsaMax);
+    for (let i = 0; i < grandezza; i++) {
+      const p = this.scena.arena.limita(centro.x + Phaser.Math.Between(-50, 50), centro.y + Phaser.Math.Between(-50, 50));
+      generaNemico(this.scena, this.tipoCasuale(), p.x, p.y);
+    }
+  }
+
+  // Millisecondi tra un gruppo e il successivo in questo round
   intervallo() {
     const ms = ONDATE.intervalloInizialeMs - ONDATE.riduzionePerRoundMs * (this.roundNelCiclo() - 1);
     return Math.max(ms, ONDATE.intervalloMinimoMs);
@@ -81,7 +96,7 @@ class GestoreRound {
         return;
       }
       if (t >= this.prossimaComparsa) {
-        if (nemiciVivi < ONDATE.maxNemiciInsieme) generaNemico(this.scena, this.tipoCasuale());
+        this.generaGruppo(nemiciVivi);
         this.prossimaComparsa = t + this.intervallo();
       }
       return;
@@ -116,9 +131,11 @@ class GestoreRound {
     // Normalmente non c'è più nessuno; serve se il round viene chiuso dal tasto debug
     for (const n of this.scena.nemici.getChildren().slice()) dissolviNemico(this.scena, n);
     for (const p of this.scena.proiettiliNemici.getChildren()) if (p.active) disattivaProiettile(p);
+    svuotaZone(this.scena);
 
     if (this.tipo === 'boss') {
-      this.scena.interfaccia.mostraBanner('Boss sconfitto! Ciclo ' + (this.ciclo() + 2));
+      this.scena.espandiArena();
+      this.scena.interfaccia.mostraBanner('Boss sconfitto! L\'arena si allarga');
     } else {
       this.scena.interfaccia.mostraBanner('Round ' + this.numero + ' superato!');
     }

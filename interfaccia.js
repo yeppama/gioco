@@ -1,5 +1,7 @@
 // ============================================================
 // INTERFACCIA - tutto ciò che si legge sullo schermo durante la partita
+// Tutti gli elementi hanno setScrollFactor(0): restano fermi sullo schermo
+// mentre la telecamera segue il giocatore nell'arena.
 // ============================================================
 
 const COLORE_FRECCE = '#f2e6b8';
@@ -8,11 +10,11 @@ class Interfaccia {
   constructor(scena) {
     this.scena = scena;
     const testo = (x, y, colore, grandezza) =>
-      scena.add.text(x, y, '', { fontSize: grandezza || '18px', color: colore }).setDepth(20);
+      scena.add.text(x, y, '', { fontSize: grandezza || '18px', color: colore }).setDepth(20).setScrollFactor(0);
 
     // Barra dell'esperienza: una striscia sottile in cima allo schermo
-    scena.add.rectangle(0, 0, LARGHEZZA, 6, 0x2a2a35).setOrigin(0, 0).setDepth(20);
-    this.barraExp = scena.add.rectangle(0, 0, 0, 6, 0x6fd36f).setOrigin(0, 0).setDepth(21);
+    scena.add.rectangle(0, 0, LARGHEZZA, 6, 0x2a2a35).setOrigin(0, 0).setDepth(20).setScrollFactor(0);
+    this.barraExp = scena.add.rectangle(0, 0, 0, 6, 0x6fd36f).setOrigin(0, 0).setDepth(21).setScrollFactor(0);
 
     // In alto a sinistra: vita, frecce, livello
     this.testoVita = testo(16, 14, '#ffffff');
@@ -25,40 +27,45 @@ class Interfaccia {
 
     // Barra della vita del boss, sotto il numero del round
     this.nomeBoss = testo(LARGHEZZA / 2, 62, '#f2e6b8', '16px').setOrigin(0.5, 0);
-    this.sfondoBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0x2a2a35).setOrigin(0, 0.5).setDepth(20);
-    this.barraBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0xc0392b).setOrigin(0, 0.5).setDepth(21);
+    this.sfondoBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0x2a2a35)
+      .setOrigin(0, 0.5).setDepth(20).setScrollFactor(0);
+    this.barraBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0xc0392b)
+      .setOrigin(0, 0.5).setDepth(21).setScrollFactor(0);
 
     // Scritta grande al centro (inizio e fine round)
     this.banner = scena.add.text(LARGHEZZA / 2, ALTEZZA / 2 - 120, '', {
       fontSize: '40px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(20).setAlpha(0);
+    }).setOrigin(0.5).setDepth(20).setScrollFactor(0).setAlpha(0);
 
-    // Barra di ricarica sotto il giocatore, visibile solo mentre ricarica
+    // Barra di ricarica sotto il giocatore (questa invece si muove con lui)
     this.barraRicarica = scena.add.rectangle(0, 0, 0, 4, 0xf2e6b8).setOrigin(0, 0.5).setDepth(20).setVisible(false);
 
     // Promemoria dei comandi: diverso su telefono e su PC
     const touch = scena.sys.game.device.input.touch;
     const aiuto = touch
-      ? 'Tocca a sinistra: schivata (frecce)   Destra: joystick'
-      : 'WASD: muoviti   Shift: schivata (costa frecce)';
-    scena.add.text(16, ALTEZZA - 28, aiuto, { fontSize: '15px', color: '#8a8a99' }).setDepth(20);
+      ? 'Sinistra: schivata   Destra: joystick'
+      : 'WASD muoviti · Shift schivata · Spazio carica · Esc pausa';
+    scena.add.text(touch ? 130 : 16, ALTEZZA - 28, aiuto, { fontSize: '15px', color: '#8a8a99' })
+      .setDepth(20).setScrollFactor(0);
 
     if (scena.debug) {
-      scena.add.text(LARGHEZZA - 16, 14, 'DEBUG\nL: livello\nI: invincibile\nN: chiudi round\nB: boss  M: mini boss', {
+      scena.add.text(LARGHEZZA - 16, 64, 'DEBUG\nL: livello\nI: invincibile\nN: chiudi round\nB: boss  M: mini boss', {
         fontSize: '14px', color: '#ff6b6b', align: 'right',
-      }).setOrigin(1, 0).setDepth(20);
+      }).setOrigin(1, 0).setDepth(20).setScrollFactor(0);
     }
   }
 
   // Chiamata ogni fotogramma: legge i valori dalla partita e aggiorna i testi
   aggiorna(t) {
     const s = this.scena;
+    const arco = s.arco;
     this.testoVita.setText('Vita: ' + Math.ceil(s.vita) + ' / ' + s.stats.vitaMax + (s.invincibileDebug ? '  (invincibile)' : ''));
     this.testoLivello.setText('Livello ' + s.livello);
     this.barraExp.setSize(LARGHEZZA * Phaser.Math.Clamp(s.exp / s.expNecessaria, 0, 1), 6);
 
     // Round e timer
-    this.testoRound.setText(s.round.numero > 0 ? 'Round ' + s.round.numero : '');
+    const ciclo = s.round.ciclo() > 0 ? '  ·  Ciclo ' + (s.round.ciclo() + 1) : '';
+    this.testoRound.setText(s.round.numero > 0 ? 'Round ' + s.round.numero + ciclo : '');
     this.testoTimer.setText(s.round.testoStato(t));
 
     // Barra del boss: visibile solo se c'è un boss o mini boss in campo
@@ -72,15 +79,16 @@ class Interfaccia {
       this.barraBoss.setSize(360 * Phaser.Math.Clamp(boss.vita / boss.vitaMax, 0, 1), 10);
     }
 
-    // Frecce e ricarica
-    if (s.frecceRimaste === 0) {
-      const avanzamento = 1 - (s.fineRicarica - t) / s.stats.ricaricaMs; // da 0 a 1
+    // Frecce, carica e ricarica
+    if (arco.inRicarica) {
+      const avanzamento = 1 - (arco.fineRicarica - t) / s.stats.ricaricaMs; // da 0 a 1
       this.testoFrecce.setText('Ricarica...');
       this.barraRicarica.setVisible(true);
       this.barraRicarica.setPosition(s.giocatore.x - LATO_GIOCATORE / 2, s.giocatore.y + LATO_GIOCATORE / 2 + 8);
       this.barraRicarica.setSize(LATO_GIOCATORE * Phaser.Math.Clamp(avanzamento, 0, 1), 4);
     } else {
-      this.testoFrecce.setText('Frecce: ' + s.frecceRimaste + ' / ' + s.stats.frecceFaretra);
+      const carica = arco.staCaricando ? '   Carica: ' + arco.carica : '';
+      this.testoFrecce.setText('Frecce: ' + arco.frecceRimaste + ' / ' + s.stats.frecceFaretra + carica);
       this.barraRicarica.setVisible(false);
     }
   }
@@ -99,5 +107,33 @@ class Interfaccia {
 
   nascondiPerMorte() {
     this.barraRicarica.setVisible(false);
+  }
+
+  // Schermata di fine run: come è andata e quale fonte ha fatto più danni
+  mostraRiepilogo() {
+    const s = this.scena;
+    const secondi = Math.floor(s.tempo / 1000);
+    const durata = Math.floor(secondi / 60) + ':' + String(secondi % 60).padStart(2, '0');
+    const totale = Object.values(s.danniPerFonte).reduce((a, b) => a + b, 0) || 1;
+    const fonti = Object.entries(s.danniPerFonte)
+      .sort((a, b) => b[1] - a[1])
+      .map(([fonte, danno]) => fonte + ': ' + Math.round(danno) + ' (' + Math.round(danno / totale * 100) + '%)');
+
+    const comeRicominciare = s.sys.game.device.input.touch ? 'Tocca per ricominciare' : 'Premi R per ricominciare';
+    const righe = [
+      'SEI MORTO',
+      '',
+      'Round ' + s.round.numero + '  ·  Livello ' + s.livello + '  ·  ' + durata,
+      'Nemici uccisi: ' + s.uccisioni,
+      '',
+      'Danni per fonte',
+      ...fonti,
+      '',
+      comeRicominciare,
+    ];
+    s.add.rectangle(LARGHEZZA / 2, ALTEZZA / 2, LARGHEZZA, ALTEZZA, 0x000000, 0.6).setDepth(29).setScrollFactor(0);
+    s.add.text(LARGHEZZA / 2, ALTEZZA / 2, righe.join('\n'), {
+      fontSize: '22px', color: '#ffffff', align: 'center', lineSpacing: 4,
+    }).setOrigin(0.5).setDepth(30).setScrollFactor(0);
   }
 }

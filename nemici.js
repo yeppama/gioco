@@ -4,15 +4,19 @@
 // Boss e mini boss sono in boss.js, ma usano le stesse funzioni.
 // ============================================================
 
-// Fa comparire un nemico del tipo scelto in un punto lontano dal giocatore
-function generaNemico(scena, tipo) {
-  const g = scena.giocatore;
-  const lontani = PUNTI_COMPARSA.filter(p => Phaser.Math.Distance.Between(p.x, p.y, g.x, g.y) >= DISTANZA_MIN_COMPARSA);
-  const punto = Phaser.Utils.Array.GetRandom(lontani.length > 0 ? lontani : PUNTI_COMPARSA);
+// Fa comparire un nemico del tipo scelto nel punto (x, y);
+// senza punto, ne sceglie uno fuori dallo schermo
+function generaNemico(scena, tipo, x, y) {
+  if (x === undefined) {
+    const g = scena.giocatore;
+    const p = scena.arena.puntoComparsa(g.x, g.y, ONDATE.distanzaComparsaMin, ONDATE.distanzaComparsaMax);
+    x = p.x;
+    y = p.y;
+  }
 
   const dati = TIPI_NEMICO[tipo];
   const molt = scena.round.moltiplicatore(); // più forti a ogni round
-  const n = scena.add.rectangle(punto.x, punto.y, dati.lato, dati.lato, dati.colore);
+  const n = scena.add.rectangle(x, y, dati.lato, dati.lato, dati.colore);
   scena.nemici.add(n); // il gruppo fisico gli dà anche un corpo per le collisioni
   n.body.setCollideWorldBounds(true);
 
@@ -61,7 +65,7 @@ function aggiornaNemico(scena, n, t) {
   // Fuoco: danno a intervalli finché brucia
   if (t < n.bruciaFino && t >= n.prossimaBruciatura) {
     n.prossimaBruciatura = t + INTERVALLO_FUOCO_MS;
-    colpisciNemico(scena, n, n.dannoFuoco);
+    colpisciNemico(scena, n, n.dannoFuoco, 'Fuoco');
     if (!n.active) return; // è morto bruciato
   }
   // Bordo colorato: arancione se brucia, azzurro se rallentato
@@ -72,6 +76,7 @@ function aggiornaNemico(scena, n, t) {
   if (n.eBoss) aggiornaBoss(scena, n, t);
   else if (n.tipoNemico === 'caricatore') aggiornaCaricatore(scena, n, t);
   else if (n.tipoNemico === 'tiratore') aggiornaTiratore(scena, n, t);
+  else if (n.tipoNemico === 'mortaio') aggiornaMortaio(scena, n, t);
   else insegui(scena, n, velocitaNemico(scena, n, n.dati.velocita, t));
 }
 
@@ -163,6 +168,64 @@ function aggiornaTiratore(scena, n, t) {
   }
 }
 
+// Mortaio: sta lontano e ogni tanto segna un cerchio dove sei tu.
+// Dopo un attimo il cerchio esplode: chi è rimasto fermo viene colpito.
+function aggiornaMortaio(scena, n, t) {
+  const d = n.dati;
+  const g = scena.giocatore;
+  const distanza = Phaser.Math.Distance.Between(n.x, n.y, g.x, g.y);
+  const furia = scena.round.furia(t);
+  const ideale = furia > 1 ? d.distanzaIdeale * 0.5 : d.distanzaIdeale;
+  const v = velocitaNemico(scena, n, d.velocita, t);
+
+  if (distanza > ideale + 60) {
+    insegui(scena, n, v);
+  } else if (distanza < ideale - 60) {
+    const angolo = Phaser.Math.Angle.Between(g.x, g.y, n.x, n.y);
+    n.body.setVelocity(Math.cos(angolo) * v, Math.sin(angolo) * v);
+  } else {
+    n.body.setVelocity(0, 0);
+  }
+
+  if (t >= n.prossimoTiro && distanza < ideale + 250) {
+    creaZona(scena, g.x, g.y, d.raggio, d.ritardoMs, Math.round(d.dannoEsplosione * n.moltDanno));
+    n.prossimoTiro = t + d.cadenzaMs / furia;
+    // Piccolo rinculo visivo
+    n.setFillStyle(0xffffff);
+    scena.time.delayedCall(80, () => { if (n.active) n.setFillStyle(n.colore); });
+  }
+}
+
+// ---------------------------------------------------------- ZONE DI PERICOLO
+// Un cerchio rosso a terra che si riempie; quando è pieno esplode.
+
+function creaZona(scena, x, y, raggio, ritardoMs, danno) {
+  const bordo = scena.add.circle(x, y, raggio).setStrokeStyle(2, 0xff4444, 0.8).setDepth(-5);
+  const riempimento = scena.add.circle(x, y, raggio, 0xff4444, 0.25).setDepth(-5).setScale(0);
+  scena.zone.push({ x, y, raggio, danno, inizio: scena.tempo, esplodeA: scena.tempo + ritardoMs, bordo, riempimento });
+}
+
+function aggiornaZone(scena, t) {
+  const g = scena.giocatore;
+  for (const z of scena.zone) {
+    // Il cerchio interno cresce: quando tocca il bordo, esplode
+    z.riempimento.setScale(Phaser.Math.Clamp((t - z.inizio) / (z.esplodeA - z.inizio), 0, 1));
+    if (t < z.esplodeA) continue;
+    if (Phaser.Math.Distance.Between(z.x, z.y, g.x, g.y) <= z.raggio + LATO_GIOCATORE / 2) scena.subisciDanno(z.danno);
+    const lampo = scena.add.circle(z.x, z.y, z.raggio, 0xffa040, 0.6).setDepth(-4);
+    scena.time.delayedCall(150, () => lampo.destroy());
+    z.esplosa = true;
+  }
+  // Toglie quelle esplose (un nuovo elenco, invece di cancellare mentre si scorre)
+  for (const z of scena.zone) if (z.esplosa) { z.bordo.destroy(); z.riempimento.destroy(); }
+  scena.zone = scena.zone.filter(z => !z.esplosa);
+}
+
+function svuotaZone(scena) {
+  for (const z of scena.zone) { z.bordo.destroy(); z.riempimento.destroy(); }
+  scena.zone = [];
+}
+
 // Proiettili dei nemici: come le frecce, si riusano invece di distruggerli
 function sparaProiettileDa(scena, x, y, angolo, velocita, danno) {
   let p = scena.proiettiliNemici.getFirstDead(false);
@@ -183,13 +246,17 @@ function disattivaProiettile(p) {
   p.body.enable = false;
 }
 
-// Un colpo (freccia, fuoco, lama) ha colpito il nemico
-function colpisciNemico(scena, n, danno) {
+// Un colpo (freccia, fuoco, lama) ha colpito il nemico.
+// "fonte" serve al riepilogo di fine run.
+function colpisciNemico(scena, n, danno, fonte = 'Frecce') {
   if (!n.active) return;
+  scena.registraDanno(fonte, Math.min(danno, n.vita));
   n.vita -= danno;
 
   if (n.vita <= 0) {
+    scena.uccisioni++;
     scena.guadagnaExp(n.exp);
+    if (n.tipoNemico === 'miniboss') scena.bottinoMiniboss();
     if (n.avviso) n.avviso.destroy();
     if (n === scena.bossAttivo) scena.bossAttivo = null;
     effettoScomparsa(scena, n);

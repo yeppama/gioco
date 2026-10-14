@@ -26,7 +26,7 @@ class ScenaScelta extends Phaser.Scene {
     // Colori e sottotitolo a seconda del tipo di scelta
     const stili = {
       abilita: { titolo: '#f2e6b8', bordo: 0x5a5a6a, sotto: 'Scegli un\'abilità' },
-      maledetta: { titolo: '#ff6b6b', bordo: 0xc0392b, sotto: 'Potere con un prezzo. Puoi anche rinunciare.' },
+      maledetta: { titolo: '#ff6b6b', bordo: 0xc0392b, sotto: 'Potere con un prezzo. Oppure riposa.' },
       divina: { titolo: '#f7d774', bordo: 0xf1c40f, sotto: 'Un dono senza prezzo' },
     };
     const stile = stili[this.dati.tipo] || stili.abilita;
@@ -54,8 +54,9 @@ class ScenaScelta extends Phaser.Scene {
       this.add.text(x, y - 80, o.nome, {
         fontSize: '21px', color: '#ffffff', fontStyle: 'bold', align: 'center', wordWrap: { width: largh - 24 },
       }).setOrigin(0.5);
-      this.add.text(x, y - 42, o.livello > 1 ? 'Livello ' + o.livello : 'Nuova', {
-        fontSize: '15px', color: o.livello > 1 ? '#6fd36f' : '#f2e6b8',
+      const etichetta = (o.livello > 1 ? 'Livello ' + o.livello : 'Nuova') + (o.rarita === 'rara' ? '  ·  Rara' : '');
+      this.add.text(x, y - 42, etichetta, {
+        fontSize: '15px', color: o.rarita === 'rara' ? '#5dade2' : (o.livello > 1 ? '#6fd36f' : '#f2e6b8'),
       }).setOrigin(0.5);
       this.add.text(x, y - 10, o.descrizione, {
         fontSize: '16px', color: '#cfcfd8', align: 'center', wordWrap: { width: largh - 30 },
@@ -67,19 +68,21 @@ class ScenaScelta extends Phaser.Scene {
       carta.on('pointerdown', () => this.scegli(o.id));
     });
 
-    // Le benedizioni maledette si possono rifiutare (tasto 0 o clic sulla scritta)
+    // Al posto di una maledetta si può riposare: cura una parte della vita (tasto 4)
     if (this.dati.tipo === 'maledetta') {
-      this.add.text(LARGHEZZA / 2, 500, '0 · Rinuncia', { fontSize: '20px', color: '#8a8a99' })
+      this.add.text(LARGHEZZA / 2, 500, '4 · Riposo: recuperi il ' + Math.round(RIPOSO_CURA * 100) + '% della vita', {
+        fontSize: '20px', color: '#6fd36f',
+      })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.scegli(null));
+        .on('pointerdown', () => this.scegli('riposo'));
     }
 
-    // Tasti 1, 2, 3 (e 0 per rinunciare)
+    // Tasti 1, 2, 3 (e 4 per riposare)
     this.input.keyboard.on('keydown', (evento) => {
       const numero = parseInt(evento.key, 10);
       if (numero >= 1 && numero <= opzioni.length) this.scegli(opzioni[numero - 1].id);
-      if (numero === 0 && this.dati.tipo === 'maledetta') this.scegli(null);
+      if (numero === 4 && this.dati.tipo === 'maledetta') this.scegli('riposo');
     });
   }
 

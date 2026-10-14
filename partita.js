@@ -1,6 +1,6 @@
 // ============================================================
 // SCENA PARTITA - mette insieme tutti i pezzi:
-// giocatore, arco, abilità, nemici, round, esperienza, vita e morte
+// arena, giocatore, arco, abilità, nemici, round, esperienza, vita e morte
 // ============================================================
 
 class ScenaPartita extends Phaser.Scene {
@@ -15,30 +15,31 @@ class ScenaPartita extends Phaser.Scene {
     this.invincibileDebug = false;
 
     // "tempo" è l'orologio della partita: avanza solo quando si gioca,
-    // si ferma durante la scelta delle abilità
+    // si ferma durante le scelte e la pausa
     this.tempo = 0;
     this.morto = false;
 
-    // Abilità prese in questa run: { idAbilita: livello }
+    // Abilità e benedizioni prese in questa run: { id: livello }
     this.livelliAbilita = {};
     this.stats = calcolaStatistiche(this.livelliAbilita);
     this.vita = this.stats.vitaMax;
 
-    // Esperienza
+    // Esperienza e scelte
     this.livello = 1;
     this.exp = 0;
     this.expNecessaria = EXP_PRIMO_LIVELLO;
-    // Scelte da mostrare appena possibile (abilità, benedizioni), in ordine.
-    // All'inizio si sceglie la prima abilità.
+    // Scelte da mostrare appena possibile, in ordine. All'inizio si sceglie la prima abilità.
     this.codaScelte = [{ tipo: 'abilita', titolo: 'Scegli la tua prima abilità' }];
     this.dannoNelRound = false;  // per la benedizione divina
+    this.divineRicevute = 0;     // ogni divina presa dimezza la probabilità della prossima
     this.bossAttivo = null;      // il boss o mini boss in campo (per la sua barra della vita)
 
-    // Arco e movimento
+    // Statistiche per il riepilogo di fine run
+    this.danniPerFonte = {};
+    this.uccisioni = 0;
+
+    // Movimento
     this.ultimoColpo = -Infinity;    // momento dell'ultimo danno subito
-    this.prossimoSparo = 0;
-    this.frecceRimaste = this.stats.frecceFaretra;
-    this.fineRicarica = 0;
     this.direzione = { x: 1, y: 0 }; // dove spara: sempre al contrario di dove cammina
     this.movimento = { x: 0, y: 0 }; // direzione dei comandi in questo momento
     this.fineSchivata = 0;
@@ -49,21 +50,20 @@ class ScenaPartita extends Phaser.Scene {
     this.scudoPronto = true;
     this.prossimoScudo = 0;
 
-    // --- Ostacoli: rettangoli grigi che non si muovono ---
-    this.ostacoli = this.physics.add.staticGroup();
-    for (const o of OSTACOLI) {
-      const blocco = this.add.rectangle(o.x, o.y, o.l, o.a, 0x55555f);
-      this.physics.add.existing(blocco, true); // true = fermo, non viene spinto
-      this.ostacoli.add(blocco);
-    }
+    // Zone di pericolo a terra (mortai, pioggia del boss)
+    this.zone = [];
 
-    // --- Mappa dei percorsi per i nemici ---
-    this.flowField = new FlowField(LARGHEZZA, ALTEZZA, CELLA_FLOW, OSTACOLI, MARGINE_FLOW);
+    // --- Arena: pavimento, ostacoli, percorsi dei nemici ---
+    this.cameras.main.setBackgroundColor('#0e0e12');
+    this.arena = new Arena(this);
+    this.arena.genera(0);
+    this.flowField = this.arena.flowField;
 
-    // --- Giocatore: quadrato azzurro al centro ---
-    this.giocatore = this.add.rectangle(LARGHEZZA / 2, ALTEZZA / 2, LATO_GIOCATORE, LATO_GIOCATORE, 0x4fa3ff);
+    // --- Giocatore: quadrato azzurro al centro dell'arena, seguito dalla telecamera ---
+    this.giocatore = this.add.rectangle(this.arena.l / 2, this.arena.a / 2, LATO_GIOCATORE, LATO_GIOCATORE, 0x4fa3ff);
     this.physics.add.existing(this.giocatore);
     this.giocatore.body.setCollideWorldBounds(true); // non esce dall'arena
+    this.cameras.main.startFollow(this.giocatore, true, 0.12, 0.12);
 
     // Cerchio azzurro attorno al giocatore quando lo Scudo spirituale è pronto
     this.aloneScudo = this.add.circle(0, 0, LATO_GIOCATORE * 0.9).setStrokeStyle(2, 0x7fd6ff, 0.9).setVisible(false);
@@ -71,18 +71,19 @@ class ScenaPartita extends Phaser.Scene {
     this.mirino = this.add.rectangle(0, 0, 6, 6, 0xffffff);
 
     // --- Gruppi ---
-    this.frecce = this.physics.add.group();
+    this.arco = new Arco(this);
     this.nemici = this.physics.add.group();
     this.proiettiliNemici = this.physics.add.group();
+    const ostacoli = this.arena.ostacoli;
 
     // --- Collisioni ---
-    this.physics.add.collider(this.giocatore, this.ostacoli);
-    this.physics.add.collider(this.nemici, this.ostacoli);
+    this.physics.add.collider(this.giocatore, ostacoli);
+    this.physics.add.collider(this.nemici, ostacoli);
     this.physics.add.collider(this.nemici, this.nemici); // i nemici non si sovrappongono
-    this.physics.add.collider(this.frecce, this.ostacoli, (freccia) => this.frecciaSuOstacolo(freccia));
-    this.physics.add.overlap(this.frecce, this.nemici, (freccia, nemico) => this.frecciaSuNemico(freccia, nemico));
+    this.physics.add.collider(this.arco.frecce, ostacoli, (f) => this.arco.suOstacolo(f));
+    this.physics.add.overlap(this.arco.frecce, this.nemici, (f, n) => this.arco.suNemico(f, n));
     this.physics.add.overlap(this.giocatore, this.nemici, (giocatore, nemico) => this.subisciDanno(nemico.dannoContatto));
-    this.physics.add.collider(this.proiettiliNemici, this.ostacoli, (p) => disattivaProiettile(p));
+    this.physics.add.collider(this.proiettiliNemici, ostacoli, (p) => disattivaProiettile(p));
     this.physics.add.overlap(this.giocatore, this.proiettiliNemici, (giocatore, p) => {
       if (!p.active) return;
       disattivaProiettile(p);
@@ -94,6 +95,20 @@ class ScenaPartita extends Phaser.Scene {
     this.controlli = new Controlli(this);
     this.round = new GestoreRound(this);
     this.interfaccia = new Interfaccia(this);
+
+    // Pausa automatica quando si cambia scheda o il telefono si blocca
+    // (non in debug, dove il pannello di prova perde spesso il focus)
+    if (!this.debug) {
+      const pausaAutomatica = () => { this.controlli.richiestaPausa = true; };
+      this.game.events.on('hidden', pausaAutomatica);
+      this.game.events.on('blur', pausaAutomatica);
+      this.events.once('shutdown', () => {
+        this.game.events.off('hidden', pausaAutomatica);
+        this.game.events.off('blur', pausaAutomatica);
+      });
+    }
+    // Quando la partita riprende, i tasti premuti nella pausa non devono contare
+    this.events.on('resume', () => this.controlli.dimenticaTastiPausa());
   }
 
   // update() viene eseguita OGNI fotogramma (circa 60 volte al secondo)
@@ -103,9 +118,13 @@ class ScenaPartita extends Phaser.Scene {
       return;
     }
 
-    // Schermate di scelta: la partita si mette in pausa finché non si sceglie
+    // Schermate di scelta e pausa: la partita si ferma finché non si chiudono
     if (this.codaScelte.length > 0) {
       this.apriScelta(this.codaScelte.shift());
+      return;
+    }
+    if (this.controlli.pausaRichiesta()) {
+      this.apriPausa();
       return;
     }
 
@@ -130,18 +149,19 @@ class ScenaPartita extends Phaser.Scene {
     // Il mirino sta sempre dal lato in cui partono le frecce
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
 
-    this.gestisciArco(t);
+    this.arco.aggiorna(t, this.controlli.caricaPremuta());
     this.gestisciDifese(t);
     this.lame.aggiorna(t);
     this.round.aggiorna(t);
+    aggiornaZone(this, t);
 
     // Nemici: prima si aggiorna la mappa dei percorsi, poi ognuno si muove
     this.flowField.aggiorna(this.giocatore.x, this.giocatore.y);
     for (const n of this.nemici.getChildren().slice()) aggiornaNemico(this, n, t);
 
-    this.controllaBordiFrecce();
+    this.arco.controllaBordi();
     for (const p of this.proiettiliNemici.getChildren()) {
-      if (p.active && (p.x < 0 || p.x > LARGHEZZA || p.y < 0 || p.y > ALTEZZA)) disattivaProiettile(p);
+      if (p.active && (p.x < 0 || p.x > this.arena.l || p.y < 0 || p.y > this.arena.a)) disattivaProiettile(p);
     }
 
     // Lampeggio mentre si è invulnerabili dopo un colpo; mezzo trasparente durante la schivata
@@ -154,122 +174,33 @@ class ScenaPartita extends Phaser.Scene {
 
   // ---------------------------------------------------------- MOVIMENTO
 
-  // Muove il giocatore e restituisce true se si sta muovendo
   muoviGiocatore() {
     // Direzione da tastiera o joystick: x e y tra -1 e 1
     const { x: dx, y: dy } = this.controlli.direzione();
     this.movimento = { x: dx, y: dy };
-    const inMovimento = dx !== 0 || dy !== 0;
     // Si spara alle proprie spalle: direzione opposta al movimento.
     // Da fermo resta l'ultima direzione, quindi si continua a sparare lì.
-    if (inMovimento) this.direzione = { x: -dx, y: -dy };
+    if (dx !== 0 || dy !== 0) this.direzione = { x: -dx, y: -dy };
 
-    this.giocatore.body.setVelocity(dx * this.stats.velocita, dy * this.stats.velocita);
-    return inMovimento;
+    // Mentre carichi il colpo ti muovi più lento
+    const velocita = this.stats.velocita * (this.arco.staCaricando ? COLPO_CARICATO.rallentamento : 1);
+    this.giocatore.body.setVelocity(dx * velocita, dy * velocita);
   }
 
   // Scatto veloce che costa frecce
   schiva(t) {
     // Senza abbastanza frecce (o durante la ricarica) non si schiva
-    if (this.frecceRimaste < this.stats.costoSchivata) {
+    if (!this.arco.consuma(this.stats.costoSchivata, t)) {
       this.interfaccia.lampeggiaFrecce();
       return;
     }
-
     // Si schiva dove si sta andando; da fermo, nell'ultima direzione in cui si camminava
     const fermo = this.movimento.x === 0 && this.movimento.y === 0;
     this.dirSchivata = fermo ? { x: -this.direzione.x, y: -this.direzione.y } : { ...this.movimento };
     this.fineSchivata = t + DURATA_SCHIVATA_MS;
-
-    this.frecceRimaste -= this.stats.costoSchivata;
-    if (this.frecceRimaste === 0) this.fineRicarica = t + this.stats.ricaricaMs; // faretra svuotata: si ricarica
   }
 
-  // ---------------------------------------------------------- ARCO
-
-  // Spara da solo a intervalli regolari; a faretra vuota ricarica
-  gestisciArco(t) {
-    const inRicarica = this.frecceRimaste === 0;
-    if (inRicarica && t >= this.fineRicarica) {
-      this.frecceRimaste = this.stats.frecceFaretra; // ricarica finita
-    } else if (!inRicarica && t >= this.prossimoSparo) {
-      this.spara();
-      this.frecceRimaste--; // una raffica costa una freccia, anche se ne partono di più
-      this.prossimoSparo = t + this.stats.cadenzaMs;
-      if (this.frecceRimaste === 0) this.fineRicarica = t + this.stats.ricaricaMs;
-    }
-  }
-
-  // Una raffica: la direzione base, più le frecce extra date dalle abilità
-  spara() {
-    const g = this.giocatore;
-    let angolo = Math.atan2(this.direzione.y, this.direzione.x);
-
-    // Occhio del cacciatore: se c'è un nemico abbastanza vicino, si mira a lui
-    if (this.stats.raggioMira > 0) {
-      const bersaglio = this.nemicoPiuVicino(this.stats.raggioMira);
-      if (bersaglio) angolo = Phaser.Math.Angle.Between(g.x, g.y, bersaglio.x, bersaglio.y);
-    }
-
-    // Ventaglio: coppie di frecce inclinate a destra e a sinistra
-    const angoli = [angolo];
-    for (let i = 1; i <= this.stats.coppieDiagonali; i++) {
-      const scarto = Phaser.Math.DegToRad(ANGOLO_VENTAGLIO * i);
-      angoli.push(angolo - scarto, angolo + scarto);
-    }
-
-    // Freccia doppia: per ogni direzione, più frecce affiancate
-    const affiancate = 1 + this.stats.frecceParallele;
-    for (const a of angoli) {
-      const perpendicolare = a + Math.PI / 2;
-      for (let k = 0; k < affiancate; k++) {
-        const spostamento = (k - (affiancate - 1) / 2) * DISTANZA_PARALLELE;
-        const x = g.x + Math.cos(a) * 20 + Math.cos(perpendicolare) * spostamento;
-        const y = g.y + Math.sin(a) * 20 + Math.sin(perpendicolare) * spostamento;
-        // Furia cieca: ogni freccia devia un po' a caso
-        const deviazione = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-1, 1) * this.stats.deviazione);
-        this.lanciaFreccia(x, y, a + deviazione);
-      }
-    }
-  }
-
-  // Le frecce non vengono distrutte: si riusano (più veloce con tante frecce)
-  lanciaFreccia(x, y, angolo) {
-    let f = this.frecce.getFirstDead(false);
-    if (!f) {
-      f = this.add.rectangle(0, 0, LATO_FRECCIA, LATO_FRECCIA, 0xf2e6b8);
-      this.frecce.add(f);
-      f.body.setBounce(1); // serve per Rimbalzo: sugli ostacoli torna indietro
-    }
-    f.rimbalziRimasti = this.stats.rimbalzi;
-    f.perforazioniRimaste = this.stats.perforazioni;
-    f.colpiti = new Set(); // nemici già colpiti da questa freccia (non due volte lo stesso)
-    f.setActive(true).setVisible(true);
-    f.body.enable = true;
-    f.body.reset(x, y);
-    f.body.setVelocity(Math.cos(angolo) * VELOCITA_FRECCIA, Math.sin(angolo) * VELOCITA_FRECCIA);
-  }
-
-  frecciaSuOstacolo(f) {
-    if (f.rimbalziRimasti > 0) {
-      f.rimbalziRimasti--;   // la fisica l'ha già fatta rimbalzare
-      f.colpiti.clear();     // dopo un rimbalzo può colpire di nuovo
-    } else {
-      this.disattivaFreccia(f);
-    }
-  }
-
-  frecciaSuNemico(f, n) {
-    if (!f.active || f.colpiti.has(n)) return;
-    f.colpiti.add(n);
-    this.applicaEffetti(n);
-    colpisciNemico(this, n, this.dannoFreccia());
-    if (f.perforazioniRimaste > 0) {
-      f.perforazioniRimaste--; // la attraversa e continua
-    } else {
-      this.disattivaFreccia(f);
-    }
-  }
+  // ---------------------------------------------------------- DANNI AI NEMICI
 
   // Danno di una freccia in questo momento (Ultimo respiro lo raddoppia a vita bassa)
   dannoFreccia() {
@@ -291,31 +222,6 @@ class ScenaPartita extends Phaser.Scene {
     }
   }
 
-  // Bordi dell'arena: con Rimbalzo la freccia torna indietro, altrimenti sparisce
-  controllaBordiFrecce() {
-    for (const f of this.frecce.getChildren()) {
-      if (!f.active) continue;
-      const fuoriX = f.x < 0 || f.x > LARGHEZZA;
-      const fuoriY = f.y < 0 || f.y > ALTEZZA;
-      if (!fuoriX && !fuoriY) continue;
-      if (f.rimbalziRimasti > 0) {
-        f.rimbalziRimasti--;
-        f.colpiti.clear();
-        if (fuoriX) f.body.velocity.x *= -1;
-        if (fuoriY) f.body.velocity.y *= -1;
-        f.setPosition(Phaser.Math.Clamp(f.x, 0, LARGHEZZA), Phaser.Math.Clamp(f.y, 0, ALTEZZA));
-      } else {
-        this.disattivaFreccia(f);
-      }
-    }
-  }
-
-  disattivaFreccia(f) {
-    f.setActive(false).setVisible(false);
-    f.body.stop();
-    f.body.enable = false;
-  }
-
   nemicoPiuVicino(raggio) {
     let migliore = null;
     let distanzaMigliore = raggio;
@@ -329,13 +235,20 @@ class ScenaPartita extends Phaser.Scene {
     return migliore;
   }
 
+  // Per il riepilogo di fine run: quanti danni ha fatto ogni fonte
+  registraDanno(fonte, quantita) {
+    this.danniPerFonte[fonte] = (this.danniPerFonte[fonte] || 0) + quantita;
+  }
+
   // ---------------------------------------------------------- VITA E DIFESE
 
   gestisciDifese(t) {
     // Rigenerazione
     if (t >= this.prossimaRigenerazione) {
       this.prossimaRigenerazione = t + INTERVALLO_RIGENERAZIONE_MS;
-      if (this.stats.rigenerazione > 0 && !this.stats.rigenerazioneBloccata) this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.rigenerazione);
+      if (this.stats.rigenerazione > 0 && !this.stats.rigenerazioneBloccata) {
+        this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.rigenerazione);
+      }
     }
     // Scudo spirituale: torna pronto dopo il suo tempo di ricarica
     if (this.stats.scudoMs > 0 && !this.scudoPronto && t >= this.prossimoScudo) this.scudoPronto = true;
@@ -365,7 +278,7 @@ class ScenaPartita extends Phaser.Scene {
     if (this.vita === 0) this.muori();
   }
 
-  // ---------------------------------------------------------- ESPERIENZA E ABILITÀ
+  // ---------------------------------------------------------- ESPERIENZA, SCELTE, PAUSA
 
   guadagnaExp(quantita) {
     this.exp += quantita * this.stats.expMolt;
@@ -374,16 +287,21 @@ class ScenaPartita extends Phaser.Scene {
       this.livello++;
       this.expNecessaria = Math.round(EXP_PRIMO_LIVELLO * Math.pow(CRESCITA_EXP, this.livello - 1));
       this.codaScelte.push({ tipo: 'abilita', titolo: 'Livello ' + this.livello + '!' });
-      // Ogni 5 livelli, in più, una benedizione maledetta
-      if (this.livello % 5 === 0) this.codaScelte.push({ tipo: 'maledetta', titolo: 'Benedizione maledetta' });
     }
   }
 
   // Chiamata da round.js quando un round finisce
   fineRound(numero) {
-    if (numero >= 3 && !this.dannoNelRound) {
+    if (numero < DIVINA_DAL_ROUND || this.dannoNelRound) return;
+    // Probabilità che si dimezza a ogni divina presa: 100%, 50%, 25%...
+    if (Math.random() < Math.pow(0.5, this.divineRicevute)) {
       this.codaScelte.push({ tipo: 'divina', titolo: 'Nessun danno: benedizione divina' });
     }
+  }
+
+  // Chiamata quando muore il mini boss
+  bottinoMiniboss() {
+    this.codaScelte.push({ tipo: 'maledetta', titolo: 'La Sentinella lascia un potere maledetto' });
   }
 
   // Apre la schermata "scegli 1 tra 3" e mette in pausa la partita
@@ -398,10 +316,22 @@ class ScenaPartita extends Phaser.Scene {
       tipo: voce.tipo,
       opzioni,
       alScegliere: (id) => {
-        if (id) this.prendiAbilita(id); // id vuoto = benedizione maledetta rifiutata
+        if (id === 'riposo') {
+          this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.vitaMax * RIPOSO_CURA);
+        } else if (id) {
+          this.prendiAbilita(id);
+          if (voce.tipo === 'divina') this.divineRicevute++;
+        }
         this.scene.resume();
       },
     });
+    this.scene.pause();
+  }
+
+  apriPausa() {
+    this.giocatore.body.setVelocity(0, 0);
+    this.controlli.rilascia();
+    this.scene.launch('pausa', { partita: this });
     this.scene.pause();
   }
 
@@ -412,13 +342,22 @@ class ScenaPartita extends Phaser.Scene {
     // Se la vita massima cresce (Vigore), la stessa quantità si recupera subito
     if (this.stats.vitaMax > prima.vitaMax) this.vita += this.stats.vitaMax - prima.vitaMax;
     // Faretra più grande: le frecce in più arrivano subito (se non si sta ricaricando)
-    if (this.stats.frecceFaretra > prima.frecceFaretra && this.frecceRimaste > 0) {
-      this.frecceRimaste += this.stats.frecceFaretra - prima.frecceFaretra;
+    if (this.stats.frecceFaretra > prima.frecceFaretra && !this.arco.inRicarica) {
+      this.arco.frecceRimaste += this.stats.frecceFaretra - prima.frecceFaretra;
     }
     const voce = trovaVoce(id);
     if (voce.alPrendere) voce.alPrendere(this);
     this.vita = Math.min(this.vita, this.stats.vitaMax);
-    this.frecceRimaste = Math.min(this.frecceRimaste, this.stats.frecceFaretra);
+    this.arco.frecceRimaste = Math.min(this.arco.frecceRimaste, this.stats.frecceFaretra);
+  }
+
+  // Dopo ogni boss: nuova arena più grande, giocatore di nuovo al centro
+  espandiArena() {
+    this.arena.genera(this.round.ciclo() + 1);
+    this.flowField = this.arena.flowField;
+    this.giocatore.body.reset(this.arena.l / 2, this.arena.a / 2);
+    this.arco.disattivaTutte();
+    svuotaZone(this);
   }
 
   // ---------------------------------------------------------- DEBUG E MORTE
@@ -448,14 +387,10 @@ class ScenaPartita extends Phaser.Scene {
     this.giocatore.setFillStyle(0x333344); // il giocatore diventa grigio
     this.mirino.setVisible(false);
     this.aloneScudo.setVisible(false);
+    this.arco.nascondi();
     this.lame.nascondi();
     this.interfaccia.nascondiPerMorte();
     this.controlli.azzeraTocchi();
-
-    const comeRicominciare = this.sys.game.device.input.touch ? 'Tocca per ricominciare' : 'Premi R per ricominciare';
-    const riepilogo = 'Round ' + this.round.numero + '  ·  Livello ' + this.livello;
-    this.add.text(LARGHEZZA / 2, ALTEZZA / 2, 'SEI MORTO\n' + riepilogo + '\n\n' + comeRicominciare, {
-      fontSize: '30px', color: '#ffffff', align: 'center',
-    }).setOrigin(0.5).setDepth(30);
+    this.interfaccia.mostraRiepilogo();
   }
 }

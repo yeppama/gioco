@@ -40,7 +40,7 @@ class LameOrbitanti {
     const t = this.scena.tempo;
     if (!n.active || t - n.ultimoColpoLama < LAME.intervalloColpoMs) return;
     n.ultimoColpoLama = t;
-    colpisciNemico(this.scena, n, LAME.danno * this.scena.stats.dannoMolt);
+    colpisciNemico(this.scena, n, LAME.danno * this.scena.stats.dannoMolt, 'Lame orbitanti');
   }
 
   nascondi() {

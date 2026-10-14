@@ -5,6 +5,7 @@
 //  - id: nome breve usato nel codice
 //  - nome, descrizione: cosa vede il giocatore sulla carta
 //  - max: quante volte si può prendere
+//  - rarita: 'comune' (se manca), 'rara' o 'leggendaria': le rare escono meno spesso
 //  - applica: come cambia le statistiche (vedi statistiche.js)
 //
 // Per aggiungere un'abilità basta aggiungere una riga qui:
@@ -14,12 +15,12 @@
 const ABILITA = [
   // --- Attacco ---
   {
-    id: 'doppia', nome: 'Freccia doppia', max: 2,
+    id: 'doppia', nome: 'Freccia doppia', max: 2, rarita: 'rara',
     descrizione: (liv) => '+1 freccia parallela a ogni colpo (totale ' + (liv + 1) + ')',
     applica: (s, liv) => { s.frecceParallele += liv; },
   },
   {
-    id: 'ventaglio', nome: 'Ventaglio', max: 2,
+    id: 'ventaglio', nome: 'Ventaglio', max: 2, rarita: 'rara',
     descrizione: () => '+2 frecce in diagonale a ogni colpo',
     applica: (s, liv) => { s.coppieDiagonali += liv; },
   },
@@ -39,7 +40,7 @@ const ABILITA = [
     applica: (s, liv) => { s.cadenzaMs *= Math.pow(0.85, liv); },
   },
   {
-    id: 'mira', nome: 'Occhio del cacciatore', max: 3,
+    id: 'mira', nome: 'Occhio del cacciatore', max: 3, rarita: 'rara',
     descrizione: (liv) => 'Le frecce puntano da sole il nemico più vicino entro ' + (150 + 100 * liv) + ' pixel',
     applica: (s, liv) => { s.raggioMira = 150 + 100 * liv; },
   },
@@ -56,7 +57,7 @@ const ABILITA = [
     applica: (s, liv) => { s.geloRallenta = 0.2 + 0.1 * liv; },
   },
   {
-    id: 'lame', nome: 'Lame orbitanti', max: 3,
+    id: 'lame', nome: 'Lame orbitanti', max: 3, rarita: 'rara',
     descrizione: (liv) => (liv === 1 ? 'Una lama gira' : liv + ' lame girano') + ' attorno a te e ferisce chi tocca',
     applica: (s, liv) => { s.lame = liv; },
   },
@@ -85,11 +86,23 @@ const ABILITA = [
 ];
 
 // Pesca fino a "quante" voci diverse da una tabella (abilità o benedizioni),
-// escluse quelle già al massimo. livelli = { id: livello attuale }
+// escluse quelle già al massimo. Le voci rare hanno meno probabilità di uscire.
+// livelli = { id: livello attuale }
 function estraiOpzioni(livelli, quante, tabella) {
   const disponibili = (tabella || ABILITA).filter(a => (livelli[a.id] || 0) < a.max);
-  return Phaser.Utils.Array.Shuffle(disponibili.slice()).slice(0, quante).map(a => {
+  const scelte = [];
+  for (let i = 0; i < quante && disponibili.length > 0; i++) {
+    // Estrazione "a peso": come pescare da un sacchetto con più biglietti per le comuni
+    const pesi = disponibili.map(a => PESI_RARITA[a.rarita || 'comune']);
+    let estratto = Math.random() * pesi.reduce((somma, p) => somma + p, 0);
+    let indice = 0;
+    while (indice < pesi.length - 1 && estratto >= pesi[indice]) {
+      estratto -= pesi[indice];
+      indice++;
+    }
+    const a = disponibili.splice(indice, 1)[0]; // tolta dal sacchetto: niente doppioni
     const prossimo = (livelli[a.id] || 0) + 1;
-    return { id: a.id, nome: a.nome, livello: prossimo, descrizione: a.descrizione(prossimo) };
-  });
+    scelte.push({ id: a.id, nome: a.nome, livello: prossimo, rarita: a.rarita || 'comune', descrizione: a.descrizione(prossimo) });
+  }
+  return scelte;
 }
