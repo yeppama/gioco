@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=23`, ~3400 righe di JavaScript in 21 file.
+Stato: ottobre 2026, versione script `?v=24`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
@@ -80,7 +80,11 @@ Tutto è globale: l'ordine dei `<script>` in `index.html` conta.
 | `interfaccia.js` | HUD (vita, frecce, livello, round, scudi, contatori, barra del boss, banner, riepilogo) |
 | `scelta.js` | scena `scelta`: "scegli 1 tra 3" (stile per tipo: abilita, maledetta, divina, premio) |
 | `pausa.js` | scena `pausa`: elenco abilità e benedizioni, statistiche, Riprendi, Ricomincia, Lingua |
-| `partita.js` | scena `partita`: mette insieme tutto (movimento, schivata, vita, cure, danni, esperienza, scelte, arena) |
+| `vita.js` | `METODI_VITA`: `cura`, `subisciDanno`, difese, `vitaCritica` (overheal, scudi, Seconda vita) |
+| `combattimento.js` | `METODI_COMBATTIMENTO`: `dannoFreccia`, `applicaEffetti`, `nemicoPiuVicino`, `vista`, `alUccidere`, `respingiNemici`, `registraDanno` |
+| `progressi.js` | `METODI_PROGRESSI`: esperienza, `fineRound`, `scalaPerfetti`, `apriScelta`, `apriPausa`, `prendiAbilita` |
+| `partita.js` | scena `partita`: create, update, movimento, schivata, arena, debug, morte. In fondo `Object.assign(ScenaPartita.prototype, ...)` aggiunge i metodi dei tre file sopra |
+| `test/prova.js` | prova automatica con Playwright (non caricata dal gioco) |
 | `main.js` | crea `window.gioco = new Phaser.Game(...)` (800×600, Scale FIT, Arcade physics) |
 
 ### Flusso di un fotogramma (`ScenaPartita.update`)
@@ -171,7 +175,10 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
 
 - Commit come `yeppama` e push su `main`; poi `gh run list -R yeppama/gioco -L 1` e
   `gh run watch <id> -R yeppama/gioco --exit-status`; poi aprire il sito e controllare la console.
-- **Prova automatica**: nel browser integrato il gioco va a scatti se il pannello è nascosto. Si simula il
+- **Prova automatica**: `node test/prova.js` (dettagli in `test/LEGGIMI.md`). Ferma il ciclo vero di Phaser
+  (`game.loop.sleep()`) e avanza con `game.headlessStep(t, 16.67)` senza disegnare: tutte le prove durano
+  pochi secondi. Va lanciata prima di ogni push. Le nuove abilità e benedizioni vengono provate da sole.
+- **Prova a mano nel browser**: nel browser integrato il gioco va a scatti se il pannello è nascosto. Si simula il
   tempo con `window.gioco.step(t, 16.67)` in un ciclo (i tween però non avanzano), e si chiudono le scelte
   aperte con `game.scene.getScene('scelta').scegli(id)`.
 - Nel container cloud **cdnjs e github.io sono bloccati**: per i test con Playwright si clona
@@ -181,11 +188,10 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
 
 ## 7. Debito tecnico e ottimizzazioni consigliate (in ordine di utilità)
 
-1. **Test automatici minimi**: uno script Playwright in una cartella `test/` (fuori dal gioco) che carica la
-   pagina, prende ogni abilità e benedizione, simula 60 s e fallisce se ci sono errori in console.
-   Oggi i test sono solo manuali.
-2. **`partita.js` è troppo grande** (~550 righe). Spostare vita, cure e difese in `vita.js` e la logica delle
-   benedizioni a uccisione o schivata in un file loro.
+1. ~~Test automatici~~ fatto (`test/prova.js`). Possibili aggiunte: una prova per ogni benedizione con
+   regola speciale (es. Seconda vita che si attiva una sola volta), e una prova del menu pausa e della lingua.
+2. ~~`partita.js` troppo grande~~ fatto: diviso in `vita.js`, `combattimento.js`, `progressi.js`.
+   `prendiAbilita` ora ignora le voci già al massimo (la prova aveva trovato Casinò al livello 4 = NaN).
 3. **Numeri ancora sparsi** che violano la regola di `config.js`: `boss.js` (distanza di comparsa 300–380,
    schivata del boss furbo 520/220/1100/160, primo attacco 1500), `abilita.js` (15%, 20 di Vigore,
    scudo 12−3·liv, rogo 3·liv, gelo 20+10·liv, Casinò [15,40,60]), `interfaccia.js` (larghezza della barra

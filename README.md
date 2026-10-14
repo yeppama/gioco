@@ -40,5 +40,9 @@ Modalità prova: https://yeppama.github.io/gioco/?debug=1 (L livello, I invincib
 - `interfaccia.js` — testi e barre sullo schermo
 - `scelta.js` — la schermata "scegli 1 tra 3"
 - `pausa.js` — il menu pausa
+- `vita.js` — cure, danni subiti, scudi, Seconda vita
+- `combattimento.js` — danni ai nemici e regole delle benedizioni
+- `progressi.js` — esperienza, scelte, premi
 - `partita.js` — mette insieme tutti i pezzi
+- `test/prova.js` — prova automatica (vedi `test/LEGGIMI.md`)
 - `main.js` — l'avvio del gioco
