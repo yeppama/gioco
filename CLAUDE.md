@@ -13,4 +13,5 @@
 - Dopo ogni push, aprire https://yeppama.github.io/gioco/ e controllare la console prima di dire a Stefano di giocare.
 - Per sapere quando GitHub Pages ha finito: `gh run list -R yeppama/gioco -L 1` e `gh run watch <id> -R yeppama/gioco`.
 - Test nel browser: con il pannello nascosto il gioco va a scatti; per simulare il tempo si chiama `window.gioco.step(t, 16.67)` in un ciclo (i tween però non avanzano). `?debug=1` attiva i tasti L, I, N, B, M.
+- Per giudicare la difficoltà i bot simulati non bastano (scappano male): l'ultima parola è di Stefano che gioca. Test verificato: chi resta fermo muore nel round 1.
 - Mai cicli `while` che dipendono da `getChildren()`: in Phaser 4 restituisce una copia e il ciclo non finisce.
