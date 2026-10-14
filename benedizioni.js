@@ -49,7 +49,7 @@ const MALEDETTE = [
   },
   {
     id: 'ultimorespiro', nome: 'Ultimo respiro', max: 1,
-    descrizione: () => 'Danno doppio sotto il ' + perc(B.ultimorespiro.soglia) + '% di vita\nma lì non ti curi più, e sopra le cure valgono metà',
+    descrizione: () => 'Danno doppio sotto il ' + perc(B.ultimorespiro.soglia) + '% di vita\nma le cure valgono metà e lì sotto Rigenerazione si ferma',
     applica: (s) => { s.ultimoRespiro = true; s.cureMolt *= B.ultimorespiro.cure; },
   },
   {

@@ -1,5 +1,7 @@
 # Istruzioni per Claude
 
+- Prima di lavorare leggi `PROGETTO.md`: riepilogo di design, architettura, debito tecnico e cose da fare. Tienilo aggiornato.
+
 - Progetto di Stefano, principiante: un gioco roguelite per browser fatto per imparare.
 - Commenti nel codice in italiano, semplici, che spiegano il perché.
 - JavaScript puro + Phaser 4 da cdnjs, niente bundler né npm: il gioco si apre con index.html.

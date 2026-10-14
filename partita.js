@@ -325,7 +325,8 @@ class ScenaPartita extends Phaser.Scene {
     // Rigenerazione
     if (t >= this.prossimaRigenerazione) {
       this.prossimaRigenerazione = t + INTERVALLO_RIGENERAZIONE_MS;
-      if (this.stats.rigenerazione > 0) this.cura(this.stats.rigenerazione);
+      // Ultimo respiro: a vita critica l'abilità Rigenerazione si ferma (le altre cure no)
+      if (this.stats.rigenerazione > 0 && !this.vitaCritica()) this.cura(this.stats.rigenerazione);
     }
     // Scudo spirituale: torna pronto dopo il suo tempo di ricarica
     if (this.stats.scudoMs > 0 && !this.scudoPronto && t >= this.prossimoScudo) this.scudoPronto = true;
@@ -335,8 +336,7 @@ class ScenaPartita extends Phaser.Scene {
 
   // Ogni cura passa da qui: quello che supera la vita massima va nell'overheal
   cura(quantita) {
-    // Ultimo respiro: a vita critica nessuna cura, altrimenti valgono meno
-    if (this.vitaCritica()) return;
+    // Ultimo respiro: tutte le cure valgono meno
     quantita *= this.stats.cureMolt;
     const spazio = this.stats.vitaMax - this.vita;
     this.vita = Math.min(this.stats.vitaMax, this.vita + quantita);

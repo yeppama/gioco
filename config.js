@@ -132,7 +132,7 @@ const BENEDIZIONI = {
   faretrapesante: { frecce: 15, velocitaSePiena: 0.8 },       // lento solo con più di metà faretra
   occhidibrace: { exp: 1.35, velocitaNemici: 1.2, vitaNemici: 1.2 },
   miraossessiva: { raggio: 300, cadenza: 1.25, vitaMax: 0.85 }, // cadenza 1.25 = spari il 25% più piano
-  ultimorespiro: { soglia: 0.3, danno: 2, cure: 0.5 },        // sotto la soglia nessuna cura, sopra cure dimezzate
+  ultimorespiro: { soglia: 0.3, danno: 2, cure: 0.5 },        // cure dimezzate; sotto la soglia si ferma Rigenerazione
   pattofulmine: { graziaMs: 500, raggio: 130, moltDannoNemici: 4 }, // il fulmine colpisce anche i nemici vicini
   ombralenta: { costoSchivata: 2, invisibileMs: 1000 },       // dopo la schivata i nemici ti perdono di vista
   setebattaglia: { dannoPerUccisione: 0.02, dannoMassimo: 0.4, intervalloOndate: 0.75 },
