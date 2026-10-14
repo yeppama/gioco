@@ -126,7 +126,7 @@ function estraiOpzioni(livelli, quante, tabella) {
     }
     const a = disponibili.splice(indice, 1)[0]; // tolta dal sacchetto: niente doppioni
     const prossimo = (livelli[a.id] || 0) + 1;
-    scelte.push({ id: a.id, nome: a.nome, livello: prossimo, rarita: a.rarita || 'comune', descrizione: a.descrizione(prossimo) });
+    scelte.push({ id: a.id, nome: nomeDi(a), livello: prossimo, rarita: a.rarita || 'comune', descrizione: descrizioneDi(a, prossimo) });
   }
   return scelte;
 }

@@ -21,57 +21,63 @@ class ScenaPausa extends Phaser.Scene {
     const titolo = (x, y, contenuto, colore) => testo(x, y, contenuto, { fontSize: '19px', color: colore, fontStyle: 'bold' });
 
     this.add.rectangle(LARGHEZZA / 2, ALTEZZA / 2, LARGHEZZA, ALTEZZA, 0x000000, 0.8);
-    this.add.text(LARGHEZZA / 2, 40, 'Pausa', { fontSize: '34px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
+    this.add.text(LARGHEZZA / 2, 40, t('p.titolo'), { fontSize: '34px', color: '#ffffff', fontStyle: 'bold' }).setOrigin(0.5);
     const ciclo = p.round.ciclo() + 1;
-    this.add.text(LARGHEZZA / 2, 76, 'Round ' + p.round.numero + '  ·  Ciclo ' + ciclo + '  ·  Livello ' + p.livello, {
+    this.add.text(LARGHEZZA / 2, 76, t('p.info', p.round.numero, ciclo, p.livello), {
       fontSize: '16px', color: '#8a8a99',
     }).setOrigin(0.5);
 
     // Elenco "Nome  livello/massimo" delle voci prese da una tabella
     const elenco = (tabella) => {
-      const righe = tabella.filter(v => p.livelliAbilita[v.id]).map(v => v.nome + '  ' + p.livelliAbilita[v.id] + '/' + v.max);
+      const righe = tabella.filter(v => p.livelliAbilita[v.id]).map(v => nomeDi(v) + '  ' + p.livelliAbilita[v.id] + (v.max < 99 ? '/' + v.max : ''));
       return righe.length > 0 ? righe.join('\n') : '—';
     };
 
     // Colonna sinistra: abilità
-    titolo(40, 110, 'Abilità', '#f2e6b8');
+    titolo(40, 110, t('p.abilita'), '#f2e6b8');
     testo(40, 140, elenco([...ABILITA, ...COMBINAZIONI]));
     // Ricette delle combinazioni, così si possono scoprire
-    const ricette = COMBINAZIONI.map(c => c.nome + ':\n  ' + Object.entries(c.requisiti)
-      .map(([id, liv]) => trovaVoce(id).nome + ' ' + liv).join(' + ')).join('\n');
-    titolo(40, 420, 'Combinazioni', '#f1c40f');
+    const ricette = COMBINAZIONI.map(c => nomeDi(c) + ':\n  ' + Object.entries(c.requisiti)
+      .map(([id, liv]) => nomeDi(trovaVoce(id)) + ' ' + liv).join(' + ')).join('\n');
+    titolo(40, 420, t('p.combinazioni'), '#f1c40f');
     testo(40, 448, ricette, { fontSize: '14px' });
 
     // Colonna centrale: benedizioni
-    titolo(300, 110, 'Benedizioni divine', '#f7d774');
+    titolo(300, 110, t('p.divine'), '#f7d774');
     testo(300, 140, elenco(DIVINE));
-    titolo(300, 250, 'Benedizioni maledette', '#ff6b6b');
+    titolo(300, 250, t('p.maledette'), '#ff6b6b');
     testo(300, 280, elenco(MALEDETTE));
-    titolo(300, 370, 'Premi', '#6fd36f');
-    testo(300, 400, elenco(PREMI).replace(/\/999/g, ''));
+    titolo(300, 370, t('p.premi'), '#6fd36f');
+    testo(300, 400, elenco(PREMI));
 
     // Colonna destra: statistiche reali
     const frecceRaffica = (1 + s.frecceParallele) * (1 + 2 * s.coppieDiagonali);
     const righe = [
-      'Vita: ' + Math.ceil(p.vita) + ' / ' + s.vitaMax,
-      'Danno freccia: ' + s.danno.toFixed(1),
-      'Raffiche al secondo: ' + (1000 / s.cadenzaMs).toFixed(1),
-      'Frecce per raffica: ' + frecceRaffica,
-      'Faretra: ' + s.frecceFaretra,
-      'Ricarica: ' + (s.ricaricaMs / 1000).toFixed(1) + ' s',
-      'Schivata: ' + s.costoSchivata + ' frecce',
-      'Velocità: ' + Math.round(s.velocita),
+      t('st.vita', Math.ceil(p.vita), s.vitaMax),
+      t('st.danno', s.danno.toFixed(1)),
+      t('st.raffiche', (1000 / s.cadenzaMs).toFixed(1)),
+      t('st.perRaffica', frecceRaffica),
+      t('st.faretra', s.frecceFaretra),
+      t('st.ricarica', (s.ricaricaMs / 1000).toFixed(1)),
+      t('st.schivata', s.costoSchivata),
+      t('st.velocita', Math.round(s.velocita)),
     ];
-    if (s.rimbalzi > 0) righe.push('Rimbalzi: ' + s.rimbalzi);
-    if (s.perforazioni > 0) righe.push('Perforazioni: ' + s.perforazioni);
-    if (s.raggioMira > 0) righe.push('Mira automatica: ' + s.raggioMira + ' px');
-    if (s.expMolt !== 1) righe.push('Esperienza: x' + s.expMolt.toFixed(2));
-    titolo(560, 110, 'Statistiche', '#7fd6ff');
+    if (s.rimbalzi > 0) righe.push(t('st.rimbalzi', s.rimbalzi));
+    if (s.perforazioni > 0) righe.push(t('st.perforazioni', s.perforazioni));
+    if (s.raggioMira > 0) righe.push(t('st.mira', s.raggioMira));
+    if (s.frecciaGratis > 0) righe.push(t('st.gratis', Math.round(s.frecciaGratis * 100)));
+    if (s.expMolt !== 1) righe.push(t('st.esperienza', s.expMolt.toFixed(2)));
+    titolo(560, 110, t('p.statistiche'), '#7fd6ff');
     testo(560, 140, righe.join('\n'));
 
     // Pulsanti
-    this.pulsante(LARGHEZZA / 2 - 110, ALTEZZA - 60, 'Riprendi (Esc)', () => this.riprendi());
-    this.pulsante(LARGHEZZA / 2 + 110, ALTEZZA - 60, 'Ricomincia', () => this.ricomincia());
+    this.pulsante(LARGHEZZA / 2 - 220, ALTEZZA - 60, t('p.riprendi'), () => this.riprendi());
+    this.pulsante(LARGHEZZA / 2, ALTEZZA - 60, t('p.ricomincia'), () => this.ricomincia());
+    // Cambio lingua: la pausa si ridisegna subito nella nuova lingua
+    this.pulsante(LARGHEZZA / 2 + 220, ALTEZZA - 60, t('p.lingua'), () => {
+      impostaLingua(LINGUA === 'it' ? 'en' : 'it');
+      this.scene.restart({ partita: this.partita });
+    });
 
     this.input.keyboard.on('keydown-ESC', () => this.riprendi());
     this.input.keyboard.on('keydown-P', () => this.riprendi());

@@ -48,11 +48,10 @@ class Interfaccia {
     this.testoPerfetti = testo(LARGHEZZA - 16, 36, '#f7d774', '16px').setOrigin(1, 0);
 
     // Promemoria dei comandi
-    const aiuto = 'WASD muoviti · Shift schivata · Spazio carica (2 volte: onda) · Ctrl ricarica · Esc pausa';
-    scena.add.text(16, ALTEZZA - 28, aiuto, { fontSize: '14px', color: '#8a8a99' }).setDepth(20).setScrollFactor(0);
+    this.testoAiuto = scena.add.text(16, ALTEZZA - 28, '', { fontSize: '14px', color: '#8a8a99' }).setDepth(20).setScrollFactor(0);
 
     if (scena.debug) {
-      scena.add.text(LARGHEZZA - 16, 66, 'DEBUG\nL: livello\nI: invincibile\nN: chiudi round\nB: boss  M: mini boss', {
+      this.testoDebug = scena.add.text(LARGHEZZA - 16, 66, '', {
         fontSize: '14px', color: '#ff6b6b', align: 'right',
       }).setOrigin(1, 0).setDepth(20).setScrollFactor(0);
     }
@@ -62,15 +61,18 @@ class Interfaccia {
   aggiorna(t) {
     const s = this.scena;
     const arco = s.arco;
-    this.testoVita.setText('Vita: ' + Math.ceil(s.vita) + ' / ' + s.stats.vitaMax + (s.invincibileDebug ? '  (invincibile)' : ''));
-    this.testoLivello.setText('Livello ' + s.livello);
-    this.testoOverheal.setText('Overheal ' + Math.floor(s.overheal) + '/' + s.stats.vitaMax + (s.scudiOverheal > 0 ? '  ·  Scudi ' + s.scudiOverheal : ''));
-    this.testoPerfetti.setText('Round senza danni: ' + s.roundSenzaDanni);
+    // Le scritte fisse si rileggono ogni volta: così il cambio di lingua vale subito
+    this.testoAiuto.setText(t('hud.aiuto'));
+    if (this.testoDebug) this.testoDebug.setText(t('hud.debug'));
+    this.testoVita.setText(t('hud.vita', Math.ceil(s.vita), s.stats.vitaMax) + (s.invincibileDebug ? t('hud.invincibile') : ''));
+    this.testoLivello.setText(t('hud.livello', s.livello));
+    this.testoOverheal.setText(t('hud.overheal', Math.floor(s.overheal), s.stats.vitaMax) + (s.scudiOverheal > 0 ? t('hud.scudi', s.scudiOverheal) : ''));
+    this.testoPerfetti.setText(t('hud.perfetti', s.roundSenzaDanni));
     this.barraExp.setSize(LARGHEZZA * Phaser.Math.Clamp(s.exp / s.expNecessaria, 0, 1), 6);
 
     // Round e timer
-    const ciclo = s.round.ciclo() > 0 ? '  ·  Ciclo ' + (s.round.ciclo() + 1) : '';
-    this.testoRound.setText(s.round.numero > 0 ? 'Round ' + s.round.numero + ciclo : '');
+    const ciclo = s.round.ciclo() > 0 ? t('hud.ciclo', s.round.ciclo() + 1) : '';
+    this.testoRound.setText(s.round.numero > 0 ? t('hud.round', s.round.numero) + ciclo : '');
     this.testoTimer.setText(s.round.testoStato(t));
 
     // Barra del boss: visibile solo se c'è un boss o mini boss in campo
@@ -80,20 +82,20 @@ class Interfaccia {
     this.sfondoBoss.setVisible(visibile);
     this.barraBoss.setVisible(visibile);
     if (visibile) {
-      this.nomeBoss.setText(boss.dati.nome);
+      this.nomeBoss.setText(tl(boss.dati.nome));
       this.barraBoss.setSize(360 * Phaser.Math.Clamp(boss.vita / boss.vitaMax, 0, 1), 10);
     }
 
     // Frecce, carica e ricarica
     if (arco.inRicarica) {
       const avanzamento = 1 - (arco.fineRicarica - t) / s.stats.ricaricaMs; // da 0 a 1
-      this.testoFrecce.setText('Ricarica...');
+      this.testoFrecce.setText(t('hud.ricarica'));
       this.barraRicarica.setVisible(true);
       this.barraRicarica.setPosition(s.giocatore.x - LATO_GIOCATORE / 2, s.giocatore.y + LATO_GIOCATORE / 2 + 8);
       this.barraRicarica.setSize(LATO_GIOCATORE * Phaser.Math.Clamp(avanzamento, 0, 1), 4);
     } else {
-      const carica = arco.staCaricando ? '   Carica: ' + arco.carica : '';
-      this.testoFrecce.setText('Frecce: ' + arco.frecceRimaste + ' / ' + s.stats.frecceFaretra + carica);
+      const carica = arco.staCaricando ? t('hud.carica', arco.carica) : '';
+      this.testoFrecce.setText(t('hud.frecce', arco.frecceRimaste, s.stats.frecceFaretra) + carica);
       this.barraRicarica.setVisible(false);
     }
   }
@@ -122,19 +124,18 @@ class Interfaccia {
     const totale = Object.values(s.danniPerFonte).reduce((a, b) => a + b, 0) || 1;
     const fonti = Object.entries(s.danniPerFonte)
       .sort((a, b) => b[1] - a[1])
-      .map(([fonte, danno]) => fonte + ': ' + Math.round(danno) + ' (' + Math.round(danno / totale * 100) + '%)');
+      .map(([fonte, danno]) => t('fonte.' + fonte) + ': ' + Math.round(danno) + ' (' + Math.round(danno / totale * 100) + '%)');
 
-    const comeRicominciare = 'Premi R per ricominciare';
     const righe = [
-      'SEI MORTO',
+      t('m.morto'),
       '',
-      'Round ' + s.round.numero + '  ·  Livello ' + s.livello + '  ·  ' + durata,
-      'Nemici uccisi: ' + s.uccisioni,
+      t('m.info', s.round.numero, s.livello, durata),
+      t('m.uccisi', s.uccisioni),
       '',
-      'Danni per fonte',
+      t('m.fonti'),
       ...fonti,
       '',
-      comeRicominciare,
+      t('m.ricomincia'),
     ];
     s.add.rectangle(LARGHEZZA / 2, ALTEZZA / 2, LARGHEZZA, ALTEZZA, 0x000000, 0.6).setDepth(29).setScrollFactor(0);
     s.add.text(LARGHEZZA / 2, ALTEZZA / 2, righe.join('\n'), {

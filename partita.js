@@ -29,7 +29,7 @@ class ScenaPartita extends Phaser.Scene {
     this.exp = 0;
     this.expNecessaria = EXP_PRIMO_LIVELLO;
     // Scelte da mostrare appena possibile, in ordine. All'inizio si sceglie la prima abilità.
-    this.codaScelte = [{ tipo: 'abilita', titolo: 'Scegli la tua prima abilità' }];
+    this.codaScelte = [{ tipo: 'abilita', titolo: t('scelta.prima') }];
     this.dannoNelRound = false;  // per il premio del round senza danni
     this.roundSenzaDanni = 0;    // quanti round di fila senza danni
     this.premiSaltati = 0;       // ogni PREMI_SALTATI_PER_MALEDETTA premi saltati = un potere maledetto
@@ -282,7 +282,7 @@ class ScenaPartita extends Phaser.Scene {
     while (this.overheal >= this.stats.vitaMax && this.scudiOverheal < OVERHEAL_SCUDI_MASSIMI) {
       this.overheal -= this.stats.vitaMax;
       this.scudiOverheal++;
-      this.interfaccia.mostraBanner('Scudo di overheal!');
+      this.interfaccia.mostraBanner(t('b.scudoOverheal'));
     }
     if (this.scudiOverheal >= OVERHEAL_SCUDI_MASSIMI) this.overheal = Math.min(this.overheal, this.stats.vitaMax);
   }
@@ -326,18 +326,18 @@ class ScenaPartita extends Phaser.Scene {
       this.exp -= this.expNecessaria;
       this.livello++;
       this.expNecessaria = Math.round(EXP_PRIMO_LIVELLO * Math.pow(CRESCITA_EXP, this.livello - 1));
-      this.codaScelte.push({ tipo: 'abilita', titolo: 'Livello ' + this.livello + '!' });
+      this.codaScelte.push({ tipo: 'abilita', titolo: t('scelta.livello', this.livello) });
     }
   }
 
   // Chiamata da round.js quando un round finisce
   fineRound(numero, eraBoss) {
     // Benedizione divina: solo e soltanto dopo aver sconfitto un boss
-    if (eraBoss) this.codaScelte.push({ tipo: 'divina', titolo: 'Il boss è caduto: benedizione divina' });
+    if (eraBoss) this.codaScelte.push({ tipo: 'divina', titolo: t('scelta.divinaBoss') });
     // Round senza danni: un premio a scelta (e il contatore sale)
     if (!this.dannoNelRound) {
       this.roundSenzaDanni++;
-      this.codaScelte.push({ tipo: 'premio', titolo: 'Round senza danni!' });
+      this.codaScelte.push({ tipo: 'premio', titolo: t('scelta.premio') });
       this.scalaPerfetti();
     } else {
       this.roundSenzaDanni = 0;
@@ -353,8 +353,8 @@ class ScenaPartita extends Phaser.Scene {
     else if (n === S.doppioBossA) this.round.eventoProssimo = 'doppioboss';
     else if (n === S.bossFurboA) this.round.eventoProssimo = 'bossfurbo';
     else if (n >= S.premioA) {
-      this.codaScelte.push({ tipo: 'divina', titolo: '10 round perfetti: benedizione divina' });
-      this.codaScelte.push({ tipo: 'divina', titolo: '10 round perfetti: seconda benedizione' });
+      this.codaScelte.push({ tipo: 'divina', titolo: t('scelta.perfetti1') });
+      this.codaScelte.push({ tipo: 'divina', titolo: t('scelta.perfetti2') });
       this.round.salta(S.salto);
       this.roundSenzaDanni = 0;
     }
@@ -362,7 +362,7 @@ class ScenaPartita extends Phaser.Scene {
 
   // Chiamata quando muore il mini boss
   bottinoMiniboss() {
-    this.codaScelte.push({ tipo: 'maledetta', titolo: 'La Sentinella lascia un potere maledetto' });
+    this.codaScelte.push({ tipo: 'maledetta', titolo: t('scelta.sentinella') });
   }
 
   // Apre la schermata "scegli 1 tra 3" e mette in pausa la partita
@@ -372,7 +372,7 @@ class ScenaPartita extends Phaser.Scene {
     // Se una combinazione è pronta, prende il posto della terza carta
     if (voce.tipo === 'abilita') {
       const combo = combinazioniPronte(this.livelliAbilita)[0];
-      if (combo) opzioni.splice(2, 1, { id: combo.id, nome: combo.nome, livello: 1, rarita: 'combinazione', descrizione: combo.descrizione() });
+      if (combo) opzioni.splice(2, 1, { id: combo.id, nome: nomeDi(combo), livello: 1, rarita: 'combinazione', descrizione: descrizioneDi(combo, 1) });
     }
     if (opzioni.length === 0) return; // tutto già al massimo
     this.giocatore.body.setVelocity(0, 0);
@@ -390,7 +390,7 @@ class ScenaPartita extends Phaser.Scene {
           this.premiSaltati++;
           if (this.premiSaltati >= PREMI_SALTATI_PER_MALEDETTA) {
             this.premiSaltati = 0;
-            this.codaScelte.push({ tipo: 'maledetta', titolo: 'Hai rinunciato ai premi: potere maledetto' });
+            this.codaScelte.push({ tipo: 'maledetta', titolo: t('scelta.saltati') });
           }
         } else if (id) {
           this.prendiAbilita(id);

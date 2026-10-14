@@ -71,7 +71,7 @@ class GestoreRound {
       const elite = this.eliteDaGenerare;
       if (elite) {
         this.eliteDaGenerare = false;
-        this.scena.interfaccia.mostraBanner('Un nemico d\'élite!');
+        this.scena.interfaccia.mostraBanner(t('b.elite'));
       }
       generaNemico(this.scena, this.tipoCasuale(), p.x, p.y, elite);
     }
@@ -112,7 +112,7 @@ class GestoreRound {
         this.dopoBossFurbo = false;
         generaBoss(this.scena, 'miniboss');
         generaBoss(this.scena, 'miniboss');
-        this.scena.interfaccia.mostraBanner('E ora due Sentinelle!');
+        this.scena.interfaccia.mostraBanner(t('b.dueSentinelle'));
       } else if (nemiciVivi === 0) {
         this.terminaRound(t);
       }
@@ -123,14 +123,14 @@ class GestoreRound {
     if (this.minibossA && (t >= this.minibossA || this.fase === 'ripulisci')) {
       this.minibossA = 0;
       generaBoss(this.scena, 'miniboss');
-      this.scena.interfaccia.mostraBanner('Una Sentinella ti ha trovato!');
+      this.scena.interfaccia.mostraBanner(t('b.sentinellaTrova'));
     }
 
     if (this.fase === 'combattimento') {
       if (t - this.inizio >= this.durataS() * 1000 && !this.minibossA) {
         this.fase = 'ripulisci';
         this.inizioFuria = t;
-        if (nemiciVivi > 0) this.scena.interfaccia.mostraBanner('Elimina i rimasti!');
+        if (nemiciVivi > 0) this.scena.interfaccia.mostraBanner(t('b.eliminaRimasti'));
         return;
       }
       if (t >= this.prossimaComparsa) {
@@ -161,11 +161,11 @@ class GestoreRound {
       if (evento === 'doppioboss') {
         generaBoss(this.scena, 'boss');
         generaBoss(this.scena, 'boss');
-        this.scena.interfaccia.mostraBanner('Doppio boss!');
+        this.scena.interfaccia.mostraBanner(t('b.doppioBoss'));
       } else {
         rendiFurbo(generaBoss(this.scena, 'boss'));
         this.dopoBossFurbo = true;
-        this.scena.interfaccia.mostraBanner('Il Custode ti studia...');
+        this.scena.interfaccia.mostraBanner(t('b.custodeStudia'));
       }
       return;
     }
@@ -180,12 +180,12 @@ class GestoreRound {
       // Il boss non arriva da solo: lo accompagna un'orda
       const quanti = ORDA_BOSS.nemiciPerGruppo + ORDA_BOSS.extraPerCiclo * this.ciclo();
       for (let i = 0; i < ORDA_BOSS.gruppi; i++) this.generaGruppo(0, quanti);
-      this.scena.interfaccia.mostraBanner(BOSS.nome);
+      this.scena.interfaccia.mostraBanner(tl(BOSS.nome));
     } else if (this.tipo === 'miniboss') {
       generaBoss(this.scena, 'miniboss');
-      this.scena.interfaccia.mostraBanner('Round ' + this.numero + ': ' + MINIBOSS.nome);
+      this.scena.interfaccia.mostraBanner(t('b.round', this.numero) + ': ' + tl(MINIBOSS.nome));
     } else {
-      this.scena.interfaccia.mostraBanner('Round ' + this.numero + (this.moltExtra > 1 ? ': più duro!' : ''));
+      this.scena.interfaccia.mostraBanner(t('b.round', this.numero) + (this.moltExtra > 1 ? t('b.piuDuro') : ''));
     }
   }
 
@@ -200,9 +200,9 @@ class GestoreRound {
     this.minibossA = 0;
     if (this.tipo === 'boss') {
       this.scena.espandiArena();
-      this.scena.interfaccia.mostraBanner('Boss sconfitto! L\'arena si allarga');
+      this.scena.interfaccia.mostraBanner(t('b.bossSconfitto'));
     } else {
-      this.scena.interfaccia.mostraBanner('Round ' + this.numero + ' superato!');
+      this.scena.interfaccia.mostraBanner(t('b.superato', this.numero));
     }
     this.scena.fineRound(this.numero, this.tipo === 'boss');
   }
@@ -212,7 +212,7 @@ class GestoreRound {
     const cicloPrima = this.ciclo();
     this.numero += quanti;
     if (this.ciclo() !== cicloPrima) this.scena.rigeneraArena(this.ciclo());
-    this.scena.interfaccia.mostraBanner('Scaraventato avanti di ' + quanti + ' round!');
+    this.scena.interfaccia.mostraBanner(t('b.scaraventato', quanti));
   }
 
   // Sceglie un tipo tra quelli già sbloccati, tenendo conto dei pesi
@@ -230,7 +230,7 @@ class GestoreRound {
   // Testo sotto il numero del round: secondi rimasti, nemici da eliminare...
   testoStato(t) {
     if (this.fase === 'pausa' || this.tipo === 'boss' || this.tipo === 'evento') return '';
-    if (this.fase === 'ripulisci') return 'Rimasti: ' + this.scena.nemici.countActive();
+    if (this.fase === 'ripulisci') return t('hud.rimasti', this.scena.nemici.countActive());
     return Math.max(0, Math.ceil(this.durataS() - (t - this.inizio) / 1000)) + ' s';
   }
 }

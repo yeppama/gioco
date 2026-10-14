@@ -7,6 +7,7 @@
 - Una funzionalità alla volta: piccola, provata, poi la successiva.
 - Comandi solo in `controlli.js`. Per ora solo tastiera: il mobile è sospeso finché Stefano non decide l'interfaccia.
 - File piccoli e separati per argomento (giocatore, nemici, abilità, interfaccia).
+- Ogni scritta visibile passa da `t('chiave')` in `lingua.js`, con versione italiana e inglese. Nuove abilità/benedizioni: aggiungere anche la traduzione in `VOCI_EN`.
 - Personaggi, nomi e storia originali: solo l'atmosfera è ispirata a Elden Ring.
 - Il gioco è pubblicato con GitHub Pages dal ramo `main`.
 - GitHub Pages tiene i file in cache 10 minuti: a ogni modifica di un .js aumenta il `?v=` di TUTTI gli script in `index.html`.

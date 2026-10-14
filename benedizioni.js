@@ -79,10 +79,15 @@ const DIVINE = [
 
 const PREMI = [
   {
-    id: 'premiovita', nome: 'Respiro', max: 999,
-    descrizione: () => '+' + Math.round(PREMIO.vitaMax * 100) + '% vita massima e recuperi il ' + Math.round(PREMIO.cura * 100) + '% della vita',
-    applica: (s, liv) => { s.vitaMaxMolt *= Math.pow(1 + PREMIO.vitaMax, liv); },
+    id: 'premiocura', nome: 'Respiro', max: 999,
+    descrizione: () => 'Recuperi il ' + Math.round(PREMIO.cura * 100) + '% della vita',
+    applica: () => {},
     alPrendere: (scena) => { scena.cura(scena.stats.vitaMax * PREMIO.cura); },
+  },
+  {
+    id: 'premiovita', nome: 'Tempra', max: 999,
+    descrizione: () => '+' + Math.round(PREMIO.vitaMax * 100) + '% vita massima',
+    applica: (s, liv) => { s.vitaMaxMolt *= Math.pow(1 + PREMIO.vitaMax, liv); },
   },
   {
     id: 'premiofrecce', nome: 'Faretra ampia', max: 999,

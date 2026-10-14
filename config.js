@@ -101,7 +101,7 @@ const TIRO_CIRCOLARE = {
 const FULMINE = {
   graziaMs: 1000,
   intervalloMs: 1000,
-  dannoBase: 3,
+  dannoBase: 6,
   moltiplicatore: 1.75,
   caloAlSecondo: 1.5,   // livelli persi al secondo muovendosi a velocità base
 };
@@ -198,7 +198,7 @@ const AGGRESSIVITA_PER_CICLO = 0.15;  // dopo ogni boss: +15% velocità, attacch
 
 // Boss (round 10, 20, 30...): 3 attacchi annunciati, a turno
 const BOSS = {
-  nome: 'Il Custode Cinereo',
+  nome: { it: 'Il Custode Cinereo', en: 'The Ashen Warden' },
   vita: 2500, velocita: 70, danno: 25, lato: 72, colore: 0x7a6a58, exp: 150,
   pausaTraAttacchiMs: 1400,
   carica: { preparazioneMs: 800, velocita: 480, durataMs: 700 },
@@ -213,7 +213,7 @@ const BOSS = {
 // Mini boss (round 7, 14, 21...): in futuro lascerà anche amuleti e strumenti
 // Quando muore lascia una benedizione maledetta
 const MINIBOSS = {
-  nome: 'La Sentinella Spezzata',
+  nome: { it: 'La Sentinella Spezzata', en: 'The Broken Sentinel' },
   vita: 700, velocita: 95, danno: 20, lato: 48, colore: 0x5f8f7a, exp: 60,
   pausaTraAttacchiMs: 1600,
   ventaglio: { preparazioneMs: 600, proiettili: 5, apertura: 50, velocita: 240, danno: 12 },

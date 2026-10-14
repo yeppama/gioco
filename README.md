@@ -21,6 +21,7 @@ Modalità prova: https://yeppama.github.io/gioco/?debug=1 (L livello, I invincib
 ## File
 
 - `index.html` — la pagina che carica il gioco
+- `lingua.js` — tutte le scritte in italiano e inglese (la lingua si cambia dal menu pausa)
 - `config.js` — tutti i numeri del gioco (vita, velocità, danni, round, nemici, ostacoli)
 - `abilita.js` — la tabella delle abilità
 - `benedizioni.js` — benedizioni maledette e divine
