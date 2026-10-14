@@ -1,5 +1,6 @@
 // ============================================================
-// SCENA PARTITA - arena, giocatore, arco, nemici, vita e morte
+// SCENA PARTITA - mette insieme tutti i pezzi:
+// giocatore, arco, abilità, nemici, round, esperienza, vita e morte
 // ============================================================
 
 class ScenaPartita extends Phaser.Scene {
@@ -9,16 +10,41 @@ class ScenaPartita extends Phaser.Scene {
 
   // create() viene eseguita UNA volta, quando la scena parte (o riparte)
   create() {
-    this.vita = VITA_MAX;
+    // Aggiungendo ?debug=1 all'indirizzo si attivano i tasti di prova
+    this.debug = new URLSearchParams(window.location.search).has('debug');
+    this.invincibileDebug = false;
+
+    // "tempo" è l'orologio della partita: avanza solo quando si gioca,
+    // si ferma durante la scelta delle abilità
+    this.tempo = 0;
     this.morto = false;
-    this.ultimoColpo = -Infinity; // momento dell'ultimo danno subito
-    this.prossimoSparo = 0;       // da quando si può sparare di nuovo
-    this.frecceRimaste = FRECCE_FARETRA;
-    this.fineRicarica = 0;        // quando finisce la ricarica in corso
-    this.direzione = { x: 1, y: 0 }; // dove spara: sempre al contrario di dove cammina (all'inizio a destra)
-    this.movimento = { x: 0, y: 0 };    // direzione dei tasti premuti in questo momento
-    this.fineSchivata = 0;           // quando finisce la schivata in corso
+
+    // Abilità prese in questa run: { idAbilita: livello }
+    this.livelliAbilita = {};
+    this.stats = calcolaStatistiche(this.livelliAbilita);
+    this.vita = this.stats.vitaMax;
+
+    // Esperienza
+    this.livello = 1;
+    this.exp = 0;
+    this.expNecessaria = EXP_PRIMO_LIVELLO;
+    this.livelliInSospeso = 0;   // level up da mostrare appena possibile
+    this.sceltaIniziale = true;  // all'inizio si sceglie la prima abilità
+
+    // Arco e movimento
+    this.ultimoColpo = -Infinity;    // momento dell'ultimo danno subito
+    this.prossimoSparo = 0;
+    this.frecceRimaste = this.stats.frecceFaretra;
+    this.fineRicarica = 0;
+    this.direzione = { x: 1, y: 0 }; // dove spara: sempre al contrario di dove cammina
+    this.movimento = { x: 0, y: 0 }; // direzione dei comandi in questo momento
+    this.fineSchivata = 0;
     this.dirSchivata = { x: 0, y: 0 };
+
+    // Abilità difensive
+    this.prossimaRigenerazione = INTERVALLO_RIGENERAZIONE_MS;
+    this.scudoPronto = true;
+    this.prossimoScudo = 0;
 
     // --- Ostacoli: rettangoli grigi che non si muovono ---
     this.ostacoli = this.physics.add.staticGroup();
@@ -36,156 +62,230 @@ class ScenaPartita extends Phaser.Scene {
     this.physics.add.existing(this.giocatore);
     this.giocatore.body.setCollideWorldBounds(true); // non esce dall'arena
 
-    // Il mirino: un puntino che mostra dove sparerà (dietro al giocatore quando cammina)
+    // Cerchio azzurro attorno al giocatore quando lo Scudo spirituale è pronto
+    this.aloneScudo = this.add.circle(0, 0, LATO_GIOCATORE * 0.9).setStrokeStyle(2, 0x7fd6ff, 0.9).setVisible(false);
+    // Il mirino: un puntino che mostra dove sparerà
     this.mirino = this.add.rectangle(0, 0, 6, 6, 0xffffff);
 
-    // --- Gruppi: frecce e nemici ---
+    // --- Gruppi ---
     this.frecce = this.physics.add.group();
     this.nemici = this.physics.add.group();
-    generaNemico(this, 'inseguitore');
-    generaNemico(this, 'caricatore');
+    this.proiettiliNemici = this.physics.add.group();
 
     // --- Collisioni ---
     this.physics.add.collider(this.giocatore, this.ostacoli);
     this.physics.add.collider(this.nemici, this.ostacoli);
     this.physics.add.collider(this.nemici, this.nemici); // i nemici non si sovrappongono
-    this.physics.add.collider(this.frecce, this.ostacoli, (freccia) => this.disattivaFreccia(freccia));
-    this.physics.add.overlap(this.frecce, this.nemici, (freccia, nemico) => {
-      if (!freccia.active) return;
-      this.disattivaFreccia(freccia);
-      colpisciNemico(this, nemico, DANNO_FRECCIA);
+    this.physics.add.collider(this.frecce, this.ostacoli, (freccia) => this.frecciaSuOstacolo(freccia));
+    this.physics.add.overlap(this.frecce, this.nemici, (freccia, nemico) => this.frecciaSuNemico(freccia, nemico));
+    this.physics.add.overlap(this.giocatore, this.nemici, (giocatore, nemico) => this.subisciDanno(nemico.dannoContatto));
+    this.physics.add.collider(this.proiettiliNemici, this.ostacoli, (p) => disattivaProiettile(p));
+    this.physics.add.overlap(this.giocatore, this.proiettiliNemici, (giocatore, p) => {
+      if (!p.active) return;
+      disattivaProiettile(p);
+      this.subisciDanno(p.danno);
     });
-    this.physics.add.overlap(this.giocatore, this.nemici, (giocatore, nemico) => this.subisciDanno(nemico.dati.danno));
 
-    // --- Comandi: tastiera e touch (vedi controlli.js) ---
+    // --- Comandi, round, interfaccia ---
     this.controlli = new Controlli(this);
-
-    // --- Interfaccia ---
-    this.testoVita = this.add.text(16, 16, '', { fontSize: '20px', color: '#ffffff' });
-    this.aggiornaTestoVita();
-    this.testoFrecce = this.add.text(16, 42, '', { fontSize: '20px', color: '#f2e6b8' });
-    // Barra di ricarica sotto il giocatore, visibile solo mentre ricarica
-    this.barraRicarica = this.add.rectangle(0, 0, 0, 4, 0xf2e6b8).setOrigin(0, 0.5).setVisible(false);
-    // Promemoria dei comandi: diverso su telefono e su PC
-    const touch = this.sys.game.device.input.touch;
-    const aiuto = touch
-      ? 'Sinistra: joystick   Tocca a destra: schivata (' + COSTO_SCHIVATA + ' frecce)'
-      : 'WASD: muoviti   Shift: schivata (' + COSTO_SCHIVATA + ' frecce)';
-    this.add.text(16, ALTEZZA - 30, aiuto, { fontSize: '16px', color: '#8a8a99' });
+    this.round = new GestoreRound(this);
+    this.interfaccia = new Interfaccia(this);
   }
 
   // update() viene eseguita OGNI fotogramma (circa 60 volte al secondo)
-  update(time) {
+  update(time, delta) {
     if (this.morto) {
       if (this.controlli.ricomincia()) this.scene.restart();
       return;
     }
 
+    // Schermate di scelta: la partita si mette in pausa finché non si sceglie
+    if (this.sceltaIniziale) {
+      this.sceltaIniziale = false;
+      this.apriScelta('Scegli la tua prima abilità');
+      return;
+    }
+    if (this.livelliInSospeso > 0) {
+      this.livelliInSospeso--;
+      this.apriScelta('Livello ' + (this.livello - this.livelliInSospeso) + '!');
+      return;
+    }
+
+    // Avanza l'orologio della partita (massimo 50 ms per volta,
+    // così se il browser si blocca un attimo non "salta" tutto in avanti)
+    this.tempo += Math.min(delta, 50);
+    const t = this.tempo;
+
+    if (this.debug) this.gestisciDebug(t);
+
     // Si legge sempre, anche durante lo scatto, così una richiesta vecchia non resta in sospeso
     const vuoleSchivare = this.controlli.schivata();
 
     // Durante la schivata i comandi di movimento non contano: si va dritti
-    const inSchivata = time < this.fineSchivata;
-    if (inSchivata) {
+    if (t < this.fineSchivata) {
       this.giocatore.body.setVelocity(this.dirSchivata.x * VELOCITA_SCHIVATA, this.dirSchivata.y * VELOCITA_SCHIVATA);
     } else {
       this.muoviGiocatore();
-      if (vuoleSchivare) this.schiva(time);
+      if (vuoleSchivare) this.schiva(t);
     }
 
     // Il mirino sta sempre dal lato in cui partono le frecce
     this.mirino.setPosition(this.giocatore.x + this.direzione.x * 24, this.giocatore.y + this.direzione.y * 24);
 
-    this.gestisciArco(time);
+    this.gestisciArco(t);
+    this.gestisciDifese(t);
+    this.round.aggiorna(t);
 
     // Nemici: prima si aggiorna la mappa dei percorsi, poi ognuno si muove
     this.flowField.aggiorna(this.giocatore.x, this.giocatore.y);
-    for (const n of this.nemici.getChildren().slice()) aggiornaNemico(this, n, time);
+    for (const n of this.nemici.getChildren().slice()) aggiornaNemico(this, n, t);
 
-    // Le frecce uscite dall'arena tornano disponibili
-    for (const f of this.frecce.getChildren()) {
-      if (f.active && (f.x < 0 || f.x > LARGHEZZA || f.y < 0 || f.y > ALTEZZA)) this.disattivaFreccia(f);
+    this.controllaBordiFrecce();
+    for (const p of this.proiettiliNemici.getChildren()) {
+      if (p.active && (p.x < 0 || p.x > LARGHEZZA || p.y < 0 || p.y > ALTEZZA)) disattivaProiettile(p);
     }
 
-    // Lampeggio mentre si è invulnerabili dopo un colpo
-    const invulnerabile = time - this.ultimoColpo < INVULNERABILITA_MS;
-    this.giocatore.setAlpha(invulnerabile && Math.floor(time / 80) % 2 === 0 ? 0.3 : 1);
-    if (time < this.fineSchivata) this.giocatore.setAlpha(0.5); // mezzo trasparente mentre schiva
+    // Lampeggio mentre si è invulnerabili dopo un colpo; mezzo trasparente durante la schivata
+    const invulnerabile = t - this.ultimoColpo < INVULNERABILITA_MS;
+    this.giocatore.setAlpha(invulnerabile && Math.floor(t / 80) % 2 === 0 ? 0.3 : 1);
+    if (t < this.fineSchivata) this.giocatore.setAlpha(0.5);
+
+    this.interfaccia.aggiorna(t);
   }
 
-  // Scatto veloce che costa frecce
-  schiva(time) {
-    // Senza abbastanza frecce (o durante la ricarica) non si schiva
-    if (this.frecceRimaste < COSTO_SCHIVATA) {
-      this.testoFrecce.setColor('#ff6b6b'); // il contatore diventa rosso per un attimo
-      this.time.delayedCall(250, () => this.testoFrecce.setColor('#f2e6b8'));
-      return;
-    }
-
-    // Si schiva dove si sta andando; da fermo, nell'ultima direzione in cui si camminava
-    // (cioè al contrario di dove si spara)
-    const fermo = this.movimento.x === 0 && this.movimento.y === 0;
-    this.dirSchivata = fermo ? { x: -this.direzione.x, y: -this.direzione.y } : { ...this.movimento };
-    this.fineSchivata = time + DURATA_SCHIVATA_MS;
-
-    this.frecceRimaste -= COSTO_SCHIVATA;
-    if (this.frecceRimaste === 0) this.fineRicarica = time + RICARICA_MS; // faretra svuotata: si ricarica
-  }
+  // ---------------------------------------------------------- MOVIMENTO
 
   // Muove il giocatore e restituisce true se si sta muovendo
   muoviGiocatore() {
     // Direzione da tastiera o joystick: x e y tra -1 e 1
     const { x: dx, y: dy } = this.controlli.direzione();
-
     this.movimento = { x: dx, y: dy };
     const inMovimento = dx !== 0 || dy !== 0;
     // Si spara alle proprie spalle: direzione opposta al movimento.
     // Da fermo resta l'ultima direzione, quindi si continua a sparare lì.
     if (inMovimento) this.direzione = { x: -dx, y: -dy };
 
-    this.giocatore.body.setVelocity(dx * VELOCITA, dy * VELOCITA);
+    this.giocatore.body.setVelocity(dx * this.stats.velocita, dy * this.stats.velocita);
     return inMovimento;
   }
 
-  // Spara da solo a intervalli regolari; a faretra vuota ricarica
-  gestisciArco(time) {
-    const inRicarica = this.frecceRimaste === 0;
-
-    if (inRicarica && time >= this.fineRicarica) {
-      this.frecceRimaste = FRECCE_FARETRA; // ricarica finita
-    } else if (!inRicarica && time >= this.prossimoSparo) {
-      this.spara();
-      this.frecceRimaste--;
-      this.prossimoSparo = time + CADENZA_MS;
-      if (this.frecceRimaste === 0) this.fineRicarica = time + RICARICA_MS;
+  // Scatto veloce che costa frecce
+  schiva(t) {
+    // Senza abbastanza frecce (o durante la ricarica) non si schiva
+    if (this.frecceRimaste < this.stats.costoSchivata) {
+      this.interfaccia.lampeggiaFrecce();
+      return;
     }
 
-    // Interfaccia: contatore e barra di ricarica
-    if (this.frecceRimaste === 0) {
-      const avanzamento = 1 - (this.fineRicarica - time) / RICARICA_MS; // da 0 a 1
-      this.testoFrecce.setText('Ricarica...');
-      this.barraRicarica.setVisible(true);
-      this.barraRicarica.setPosition(this.giocatore.x - LATO_GIOCATORE / 2, this.giocatore.y + LATO_GIOCATORE / 2 + 8);
-      this.barraRicarica.setSize(LATO_GIOCATORE * Phaser.Math.Clamp(avanzamento, 0, 1), 4);
-    } else {
-      this.testoFrecce.setText('Frecce: ' + this.frecceRimaste + ' / ' + FRECCE_FARETRA);
-      this.barraRicarica.setVisible(false);
+    // Si schiva dove si sta andando; da fermo, nell'ultima direzione in cui si camminava
+    const fermo = this.movimento.x === 0 && this.movimento.y === 0;
+    this.dirSchivata = fermo ? { x: -this.direzione.x, y: -this.direzione.y } : { ...this.movimento };
+    this.fineSchivata = t + DURATA_SCHIVATA_MS;
+
+    this.frecceRimaste -= this.stats.costoSchivata;
+    if (this.frecceRimaste === 0) this.fineRicarica = t + RICARICA_MS; // faretra svuotata: si ricarica
+  }
+
+  // ---------------------------------------------------------- ARCO
+
+  // Spara da solo a intervalli regolari; a faretra vuota ricarica
+  gestisciArco(t) {
+    const inRicarica = this.frecceRimaste === 0;
+    if (inRicarica && t >= this.fineRicarica) {
+      this.frecceRimaste = this.stats.frecceFaretra; // ricarica finita
+    } else if (!inRicarica && t >= this.prossimoSparo) {
+      this.spara();
+      this.frecceRimaste--; // una raffica costa una freccia, anche se ne partono di più
+      this.prossimoSparo = t + this.stats.cadenzaMs;
+      if (this.frecceRimaste === 0) this.fineRicarica = t + RICARICA_MS;
+    }
+  }
+
+  // Una raffica: la direzione base, più le frecce extra date dalle abilità
+  spara() {
+    const g = this.giocatore;
+    let angolo = Math.atan2(this.direzione.y, this.direzione.x);
+
+    // Occhio del cacciatore: se c'è un nemico abbastanza vicino, si mira a lui
+    if (this.stats.raggioMira > 0) {
+      const bersaglio = this.nemicoPiuVicino(this.stats.raggioMira);
+      if (bersaglio) angolo = Phaser.Math.Angle.Between(g.x, g.y, bersaglio.x, bersaglio.y);
+    }
+
+    // Ventaglio: coppie di frecce inclinate a destra e a sinistra
+    const angoli = [angolo];
+    for (let i = 1; i <= this.stats.coppieDiagonali; i++) {
+      const scarto = Phaser.Math.DegToRad(ANGOLO_VENTAGLIO * i);
+      angoli.push(angolo - scarto, angolo + scarto);
+    }
+
+    // Freccia doppia: per ogni direzione, più frecce affiancate
+    const affiancate = 1 + this.stats.frecceParallele;
+    for (const a of angoli) {
+      const perpendicolare = a + Math.PI / 2;
+      for (let k = 0; k < affiancate; k++) {
+        const spostamento = (k - (affiancate - 1) / 2) * DISTANZA_PARALLELE;
+        const x = g.x + Math.cos(a) * 20 + Math.cos(perpendicolare) * spostamento;
+        const y = g.y + Math.sin(a) * 20 + Math.sin(perpendicolare) * spostamento;
+        this.lanciaFreccia(x, y, a);
+      }
     }
   }
 
   // Le frecce non vengono distrutte: si riusano (più veloce con tante frecce)
-  spara() {
+  lanciaFreccia(x, y, angolo) {
     let f = this.frecce.getFirstDead(false);
     if (!f) {
       f = this.add.rectangle(0, 0, LATO_FRECCIA, LATO_FRECCIA, 0xf2e6b8);
       this.frecce.add(f);
+      f.body.setBounce(1); // serve per Rimbalzo: sugli ostacoli torna indietro
     }
-    const partenzaX = this.giocatore.x + this.direzione.x * 20;
-    const partenzaY = this.giocatore.y + this.direzione.y * 20;
+    f.rimbalziRimasti = this.stats.rimbalzi;
+    f.perforazioniRimaste = this.stats.perforazioni;
+    f.colpiti = new Set(); // nemici già colpiti da questa freccia (non due volte lo stesso)
     f.setActive(true).setVisible(true);
     f.body.enable = true;
-    f.body.reset(partenzaX, partenzaY);
-    f.body.setVelocity(this.direzione.x * VELOCITA_FRECCIA, this.direzione.y * VELOCITA_FRECCIA);
+    f.body.reset(x, y);
+    f.body.setVelocity(Math.cos(angolo) * VELOCITA_FRECCIA, Math.sin(angolo) * VELOCITA_FRECCIA);
+  }
+
+  frecciaSuOstacolo(f) {
+    if (f.rimbalziRimasti > 0) {
+      f.rimbalziRimasti--;   // la fisica l'ha già fatta rimbalzare
+      f.colpiti.clear();     // dopo un rimbalzo può colpire di nuovo
+    } else {
+      this.disattivaFreccia(f);
+    }
+  }
+
+  frecciaSuNemico(f, n) {
+    if (!f.active || f.colpiti.has(n)) return;
+    f.colpiti.add(n);
+    colpisciNemico(this, n, this.stats.danno);
+    if (f.perforazioniRimaste > 0) {
+      f.perforazioniRimaste--; // la attraversa e continua
+    } else {
+      this.disattivaFreccia(f);
+    }
+  }
+
+  // Bordi dell'arena: con Rimbalzo la freccia torna indietro, altrimenti sparisce
+  controllaBordiFrecce() {
+    for (const f of this.frecce.getChildren()) {
+      if (!f.active) continue;
+      const fuoriX = f.x < 0 || f.x > LARGHEZZA;
+      const fuoriY = f.y < 0 || f.y > ALTEZZA;
+      if (!fuoriX && !fuoriY) continue;
+      if (f.rimbalziRimasti > 0) {
+        f.rimbalziRimasti--;
+        f.colpiti.clear();
+        if (fuoriX) f.body.velocity.x *= -1;
+        if (fuoriY) f.body.velocity.y *= -1;
+        f.setPosition(Phaser.Math.Clamp(f.x, 0, LARGHEZZA), Phaser.Math.Clamp(f.y, 0, ALTEZZA));
+      } else {
+        this.disattivaFreccia(f);
+      }
+    }
   }
 
   disattivaFreccia(f) {
@@ -194,17 +294,99 @@ class ScenaPartita extends Phaser.Scene {
     f.body.enable = false;
   }
 
+  nemicoPiuVicino(raggio) {
+    let migliore = null;
+    let distanzaMigliore = raggio;
+    for (const n of this.nemici.getChildren()) {
+      const d = Phaser.Math.Distance.Between(this.giocatore.x, this.giocatore.y, n.x, n.y);
+      if (d < distanzaMigliore) {
+        distanzaMigliore = d;
+        migliore = n;
+      }
+    }
+    return migliore;
+  }
+
+  // ---------------------------------------------------------- VITA E DIFESE
+
+  gestisciDifese(t) {
+    // Rigenerazione
+    if (t >= this.prossimaRigenerazione) {
+      this.prossimaRigenerazione = t + INTERVALLO_RIGENERAZIONE_MS;
+      if (this.stats.rigenerazione > 0) this.vita = Math.min(this.stats.vitaMax, this.vita + this.stats.rigenerazione);
+    }
+    // Scudo spirituale: torna pronto dopo il suo tempo di ricarica
+    if (this.stats.scudoMs > 0 && !this.scudoPronto && t >= this.prossimoScudo) this.scudoPronto = true;
+    this.aloneScudo.setVisible(this.stats.scudoMs > 0 && this.scudoPronto);
+    this.aloneScudo.setPosition(this.giocatore.x, this.giocatore.y);
+  }
+
   subisciDanno(danno) {
-    const adesso = this.time.now;
-    if (this.morto || adesso - this.ultimoColpo < INVULNERABILITA_MS) return;
-    if (adesso < this.fineSchivata) return; // durante la schivata si è intoccabili
+    const t = this.tempo;
+    if (this.morto || this.invincibileDebug) return;
+    if (t - this.ultimoColpo < INVULNERABILITA_MS) return;
+    if (t < this.fineSchivata) return; // durante la schivata si è intoccabili
 
-    this.ultimoColpo = adesso;
+    // Lo scudo assorbe il colpo intero
+    if (this.stats.scudoMs > 0 && this.scudoPronto) {
+      this.scudoPronto = false;
+      this.prossimoScudo = t + this.stats.scudoMs;
+      this.ultimoColpo = t;
+      this.cameras.main.flash(120, 127, 214, 255);
+      return;
+    }
+
+    this.ultimoColpo = t;
     this.vita = Math.max(0, this.vita - danno);
-    this.aggiornaTestoVita();
     this.cameras.main.shake(100, 0.005); // piccolo scossone dello schermo
-
     if (this.vita === 0) this.muori();
+  }
+
+  // ---------------------------------------------------------- ESPERIENZA E ABILITÀ
+
+  guadagnaExp(quantita) {
+    this.exp += quantita;
+    while (this.exp >= this.expNecessaria) {
+      this.exp -= this.expNecessaria;
+      this.livello++;
+      this.expNecessaria = Math.round(EXP_PRIMO_LIVELLO * Math.pow(CRESCITA_EXP, this.livello - 1));
+      this.livelliInSospeso++;
+    }
+  }
+
+  // Apre la schermata "scegli 1 tra 3" e mette in pausa la partita
+  apriScelta(titolo) {
+    const opzioni = estraiOpzioni(this.livelliAbilita, 3);
+    if (opzioni.length === 0) return; // tutte le abilità al massimo
+    this.giocatore.body.setVelocity(0, 0);
+    this.controlli.rilascia();
+    this.scene.launch('scelta', {
+      titolo,
+      opzioni,
+      alScegliere: (id) => {
+        this.prendiAbilita(id);
+        this.scene.resume();
+      },
+    });
+    this.scene.pause();
+  }
+
+  prendiAbilita(id) {
+    this.livelliAbilita[id] = (this.livelliAbilita[id] || 0) + 1;
+    const prima = this.stats;
+    this.stats = calcolaStatistiche(this.livelliAbilita);
+    // Se la vita massima cresce (Vigore), la stessa quantità si recupera subito
+    if (this.stats.vitaMax > prima.vitaMax) this.vita += this.stats.vitaMax - prima.vitaMax;
+    this.vita = Math.min(this.vita, this.stats.vitaMax);
+  }
+
+  // ---------------------------------------------------------- DEBUG E MORTE
+
+  // Tasti di prova, attivi solo con ?debug=1 nell'indirizzo
+  gestisciDebug(t) {
+    if (this.controlli.tastoDebug('L')) this.guadagnaExp(this.expNecessaria - this.exp);
+    if (this.controlli.tastoDebug('I')) this.invincibileDebug = !this.invincibileDebug;
+    if (this.controlli.tastoDebug('N') && this.round.fase === 'combattimento') this.round.terminaRound(t);
   }
 
   muori() {
@@ -214,16 +396,14 @@ class ScenaPartita extends Phaser.Scene {
     this.giocatore.setAlpha(1);
     this.giocatore.setFillStyle(0x333344); // il giocatore diventa grigio
     this.mirino.setVisible(false);
-    this.barraRicarica.setVisible(false);
+    this.aloneScudo.setVisible(false);
+    this.interfaccia.nascondiPerMorte();
     this.controlli.azzeraTocchi();
 
     const comeRicominciare = this.sys.game.device.input.touch ? 'Tocca per ricominciare' : 'Premi R per ricominciare';
-    this.add.text(LARGHEZZA / 2, ALTEZZA / 2, 'SEI MORTO\n' + comeRicominciare, {
-      fontSize: '32px', color: '#ffffff', align: 'center',
-    }).setOrigin(0.5);
-  }
-
-  aggiornaTestoVita() {
-    this.testoVita.setText('Vita: ' + this.vita + ' / ' + VITA_MAX);
+    const riepilogo = 'Round ' + this.round.numero + '  ·  Livello ' + this.livello;
+    this.add.text(LARGHEZZA / 2, ALTEZZA / 2, 'SEI MORTO\n' + riepilogo + '\n\n' + comeRicominciare, {
+      fontSize: '30px', color: '#ffffff', align: 'center',
+    }).setOrigin(0.5).setDepth(30);
   }
 }

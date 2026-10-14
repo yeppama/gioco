@@ -17,5 +17,5 @@ window.gioco = new Phaser.Game({
     default: 'arcade',       // fisica semplice: velocità e collisioni tra rettangoli
     arcade: { debug: false }, // metti true per vedere i bordi dei corpi fisici
   },
-  scene: [ScenaPartita],
+  scene: [ScenaPartita, ScenaScelta], // la prima parte subito, la seconda si apre a richiesta
 });

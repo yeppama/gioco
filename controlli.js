@@ -5,8 +5,8 @@
 // chiede solo "in che direzione vuole andare?" e "vuole schivare?".
 //
 // Touch:
-//  - metà sinistra: appoggia il dito dove vuoi, compare un joystick
-//  - metà destra: un tocco = schivata
+//  - metà destra: appoggia il dito dove vuoi, compare un joystick
+//  - metà sinistra: un tocco = schivata
 // ============================================================
 
 class Controlli {
@@ -14,13 +14,14 @@ class Controlli {
     // --- Tastiera ---
     this.frecceTastiera = scena.input.keyboard.createCursorKeys();
     this.tasti = scena.input.keyboard.addKeys('W,A,S,D,R,SHIFT');
+    this.tastiDebug = scena.input.keyboard.addKeys('L,I,N'); // usati solo con ?debug=1
 
     // --- Touch ---
     scena.input.addPointer(1);   // permette due dita insieme (joystick + schivata)
     this.dito = null;            // id del dito che sta usando il joystick
     this.centro = { x: 0, y: 0 };
     this.joystick = { x: 0, y: 0 };
-    this.schivataTouch = false;  // diventa true quando si tocca la metà destra
+    this.schivataTouch = false;  // diventa true quando si tocca la metà sinistra
     this.tocco = false;          // diventa true a ogni tocco (serve per ricominciare)
 
     // Disegno del joystick: un cerchio grande (base) e uno piccolo (pomello)
@@ -36,7 +37,7 @@ class Controlli {
 
   ditoGiu(p) {
     this.tocco = true;
-    if (p.x < LARGHEZZA / 2) {
+    if (p.x >= LARGHEZZA / 2) {
       if (this.dito !== null) return; // il joystick è già in uso
       this.dito = p.id;
       this.centro = { x: p.x, y: p.y };
@@ -108,6 +109,17 @@ class Controlli {
     const touch = this.tocco;
     this.tocco = false;
     return tasto || touch;
+  }
+
+  // Lascia andare il joystick (prima di una pausa, così non resta "incastrato")
+  rilascia() {
+    if (this.dito !== null) this.ditoSu({ id: this.dito });
+    this.schivataTouch = false;
+  }
+
+  // Tasti della modalità debug: true una volta per pressione
+  tastoDebug(nome) {
+    return Phaser.Input.Keyboard.JustDown(this.tastiDebug[nome]);
   }
 
   // Dimentica i tocchi vecchi (si chiama quando si muore,
