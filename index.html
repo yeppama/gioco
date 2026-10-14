@@ -2,11 +2,14 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gioco - Fase 1</title>
+  <!-- user-scalable=no: sul telefono il doppio tocco non fa zoom sulla pagina -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Gioco</title>
   <style>
-    /* Sfondo scuro e gioco centrato nella pagina */
-    body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    /* Il gioco occupa tutta la finestra; Phaser lo ridimensiona mantenendo le proporzioni */
+    html, body { margin: 0; height: 100%; background: #111; overflow: hidden; }
+    /* touch-action: none = il dito controlla il gioco, non scorre né ingrandisce la pagina */
+    body { touch-action: none; }
   </style>
   <!-- Phaser: la libreria che gestisce grafica, input e ciclo di gioco -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/4.1.0/phaser.min.js"></script>
@@ -15,10 +18,11 @@
   <!-- L'ordine conta: prima i numeri, poi i pezzi, poi la scena, infine l'avvio.
        Il "?v=" è il numero di versione: cambiandolo a ogni aggiornamento
        il browser scarica i file nuovi invece di usare quelli vecchi salvati. -->
-  <script src="config.js?v=6"></script>
-  <script src="flowfield.js?v=6"></script>
-  <script src="nemici.js?v=6"></script>
-  <script src="partita.js?v=6"></script>
-  <script src="main.js?v=6"></script>
+  <script src="config.js?v=7"></script>
+  <script src="controlli.js?v=7"></script>
+  <script src="flowfield.js?v=7"></script>
+  <script src="nemici.js?v=7"></script>
+  <script src="partita.js?v=7"></script>
+  <script src="main.js?v=7"></script>
 </body>
 </html>

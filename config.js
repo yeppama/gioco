@@ -21,6 +21,9 @@ const VELOCITA_FRECCIA = 600;    // pixel al secondo
 const DANNO_FRECCIA = 10;
 const LATO_FRECCIA = 8;
 
+// Joystick per il telefono
+const RAGGIO_JOYSTICK = 60;        // quanto si sposta il pomello dal centro, in pixel
+
 // Schivata (tasto Shift): uno scatto veloce che si paga in frecce
 const COSTO_SCHIVATA = 6;          // frecce consumate; con meno frecce non si schiva
 const VELOCITA_SCHIVATA = 700;     // pixel al secondo durante lo scatto

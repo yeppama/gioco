@@ -57,9 +57,8 @@ class ScenaPartita extends Phaser.Scene {
     });
     this.physics.add.overlap(this.giocatore, this.nemici, (giocatore, nemico) => this.subisciDanno(nemico.dati.danno));
 
-    // --- Tasti ---
-    this.frecceTastiera = this.input.keyboard.createCursorKeys();
-    this.tasti = this.input.keyboard.addKeys('W,A,S,D,R,SHIFT');
+    // --- Comandi: tastiera e touch (vedi controlli.js) ---
+    this.controlli = new Controlli(this);
 
     // --- Interfaccia ---
     this.testoVita = this.add.text(16, 16, '', { fontSize: '20px', color: '#ffffff' });
@@ -67,25 +66,31 @@ class ScenaPartita extends Phaser.Scene {
     this.testoFrecce = this.add.text(16, 42, '', { fontSize: '20px', color: '#f2e6b8' });
     // Barra di ricarica sotto il giocatore, visibile solo mentre ricarica
     this.barraRicarica = this.add.rectangle(0, 0, 0, 4, 0xf2e6b8).setOrigin(0, 0.5).setVisible(false);
-    this.add.text(16, ALTEZZA - 30, 'WASD: muoviti   Shift: schivata (' + COSTO_SCHIVATA + ' frecce)', {
-      fontSize: '16px', color: '#8a8a99',
-    });
+    // Promemoria dei comandi: diverso su telefono e su PC
+    const touch = this.sys.game.device.input.touch;
+    const aiuto = touch
+      ? 'Sinistra: joystick   Tocca a destra: schivata (' + COSTO_SCHIVATA + ' frecce)'
+      : 'WASD: muoviti   Shift: schivata (' + COSTO_SCHIVATA + ' frecce)';
+    this.add.text(16, ALTEZZA - 30, aiuto, { fontSize: '16px', color: '#8a8a99' });
   }
 
   // update() viene eseguita OGNI fotogramma (circa 60 volte al secondo)
   update(time) {
     if (this.morto) {
-      if (Phaser.Input.Keyboard.JustDown(this.tasti.R)) this.scene.restart();
+      if (this.controlli.ricomincia()) this.scene.restart();
       return;
     }
 
-    // Durante la schivata i tasti di movimento non contano: si va dritti
+    // Si legge sempre, anche durante lo scatto, così una richiesta vecchia non resta in sospeso
+    const vuoleSchivare = this.controlli.schivata();
+
+    // Durante la schivata i comandi di movimento non contano: si va dritti
     const inSchivata = time < this.fineSchivata;
     if (inSchivata) {
       this.giocatore.body.setVelocity(this.dirSchivata.x * VELOCITA_SCHIVATA, this.dirSchivata.y * VELOCITA_SCHIVATA);
     } else {
       this.muoviGiocatore();
-      if (Phaser.Input.Keyboard.JustDown(this.tasti.SHIFT)) this.schiva(time);
+      if (vuoleSchivare) this.schiva(time);
     }
 
     // Il mirino sta sempre dal lato in cui partono le frecce
@@ -129,19 +134,8 @@ class ScenaPartita extends Phaser.Scene {
 
   // Muove il giocatore e restituisce true se si sta muovendo
   muoviGiocatore() {
-    let dx = 0; // -1 sinistra, 1 destra
-    let dy = 0; // -1 su, 1 giù
-
-    if (this.tasti.A.isDown || this.frecceTastiera.left.isDown) dx = -1;
-    if (this.tasti.D.isDown || this.frecceTastiera.right.isDown) dx = 1;
-    if (this.tasti.W.isDown || this.frecceTastiera.up.isDown) dy = -1;
-    if (this.tasti.S.isDown || this.frecceTastiera.down.isDown) dy = 1;
-
-    // In diagonale si andrebbe più veloci: normalizziamo
-    if (dx !== 0 && dy !== 0) {
-      dx *= Math.SQRT1_2;
-      dy *= Math.SQRT1_2;
-    }
+    // Direzione da tastiera o joystick: x e y tra -1 e 1
+    const { x: dx, y: dy } = this.controlli.direzione();
 
     this.movimento = { x: dx, y: dy };
     const inMovimento = dx !== 0 || dy !== 0;
@@ -221,8 +215,10 @@ class ScenaPartita extends Phaser.Scene {
     this.giocatore.setFillStyle(0x333344); // il giocatore diventa grigio
     this.mirino.setVisible(false);
     this.barraRicarica.setVisible(false);
+    this.controlli.azzeraTocchi();
 
-    this.add.text(LARGHEZZA / 2, ALTEZZA / 2, 'SEI MORTO\nPremi R per ricominciare', {
+    const comeRicominciare = this.sys.game.device.input.touch ? 'Tocca per ricominciare' : 'Premi R per ricominciare';
+    this.add.text(LARGHEZZA / 2, ALTEZZA / 2, 'SEI MORTO\n' + comeRicominciare, {
       fontSize: '32px', color: '#ffffff', align: 'center',
     }).setOrigin(0.5);
   }

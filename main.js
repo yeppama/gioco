@@ -9,6 +9,10 @@ window.gioco = new Phaser.Game({
   width: LARGHEZZA,
   height: ALTEZZA,
   backgroundColor: '#1d1d24',
+  scale: {
+    mode: Phaser.Scale.FIT,               // si adatta allo schermo mantenendo le proporzioni
+    autoCenter: Phaser.Scale.CENTER_BOTH, // e resta al centro
+  },
   physics: {
     default: 'arcade',       // fisica semplice: velocità e collisioni tra rettangoli
     arcade: { debug: false }, // metti true per vedere i bordi dei corpi fisici
