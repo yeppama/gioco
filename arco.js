@@ -109,8 +109,8 @@ class Arco {
       const perpendicolare = a + Math.PI / 2;
       for (let k = 0; k < affiancate; k++) {
         const spostamento = (k - (affiancate - 1) / 2) * DISTANZA_PARALLELE;
-        const x = g.x + Math.cos(a) * 20 + Math.cos(perpendicolare) * spostamento;
-        const y = g.y + Math.sin(a) * 20 + Math.sin(perpendicolare) * spostamento;
+        const x = g.x + Math.cos(a) * PARTENZA_FRECCIA + Math.cos(perpendicolare) * spostamento;
+        const y = g.y + Math.sin(a) * PARTENZA_FRECCIA + Math.sin(perpendicolare) * spostamento;
         // Furia cieca: ogni freccia devia un po' a caso
         const deviazione = Phaser.Math.DegToRad(Phaser.Math.FloatBetween(-1, 1) * this.stats.deviazione);
         this.lancia(x, y, a + deviazione);
@@ -126,7 +126,7 @@ class Arco {
     const apertura = Phaser.Math.DegToRad(COLPO_CARICATO.apertura);
     for (let i = 0; i < this.carica; i++) {
       const a = angolo + (i - (this.carica - 1) / 2) * apertura;
-      this.lancia(g.x + Math.cos(a) * 20, g.y + Math.sin(a) * 20, a, {
+      this.lancia(g.x + Math.cos(a) * PARTENZA_FRECCIA, g.y + Math.sin(a) * PARTENZA_FRECCIA, a, {
         moltDanno: COLPO_CARICATO.moltDanno,
         perforazioniExtra: COLPO_CARICATO.perforazioniExtra,
         colore: 0x7fd6ff,

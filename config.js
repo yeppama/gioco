@@ -33,6 +33,9 @@ const RICARICA_MS = 2000;        // durata della ricarica
 const VELOCITA_FRECCIA = 600;    // pixel al secondo
 const DANNO_FRECCIA = 10;
 const LATO_FRECCIA = 8;
+// Distanza dal centro del giocatore da cui parte la freccia: piccola, così colpisce
+// anche un nemico appiccicato addosso
+const PARTENZA_FRECCIA = 6;
 const ANGOLO_VENTAGLIO = 20;     // gradi tra una freccia del ventaglio e la successiva
 const DISTANZA_PARALLELE = 12;   // pixel tra frecce parallele (Freccia doppia)
 

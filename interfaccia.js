@@ -31,6 +31,9 @@ class Interfaccia {
       .setOrigin(0, 0.5).setDepth(20).setScrollFactor(0);
     this.barraBoss = scena.add.rectangle(LARGHEZZA / 2 - 180, 86, 360, 10, 0xc0392b)
       .setOrigin(0, 0.5).setDepth(21).setScrollFactor(0);
+    this.nomeBoss.setVisible(false);
+    this.sfondoBoss.setVisible(false);
+    this.barraBoss.setVisible(false);
 
     // Scritta grande al centro (inizio e fine round)
     this.banner = scena.add.text(LARGHEZZA / 2, ALTEZZA / 2 - 120, '', {
