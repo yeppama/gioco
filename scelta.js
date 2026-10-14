@@ -25,10 +25,10 @@ class ScenaScelta extends Phaser.Scene {
     const { titolo, opzioni } = this.dati;
     // Colori e sottotitolo a seconda del tipo di scelta
     const stili = {
-      abilita: { titolo: '#f2e6b8', bordo: 0x5a5a6a, sotto: t('sotto.abilita') },
-      maledetta: { titolo: '#ff6b6b', bordo: 0xc0392b, sotto: t('sotto.maledetta') },
-      divina: { titolo: '#f7d774', bordo: 0xf1c40f, sotto: t('sotto.divina') },
-      premio: { titolo: '#6fd36f', bordo: 0x2ecc71, sotto: t('sotto.premio') },
+      abilita: { titolo: '#f2e6b8', bordo: 0x5a5a6a, sotto: tr('sotto.abilita') },
+      maledetta: { titolo: '#ff6b6b', bordo: 0xc0392b, sotto: tr('sotto.maledetta') },
+      divina: { titolo: '#f7d774', bordo: 0xf1c40f, sotto: tr('sotto.divina') },
+      premio: { titolo: '#6fd36f', bordo: 0x2ecc71, sotto: tr('sotto.premio') },
     };
     const stile = stili[this.dati.tipo] || stili.abilita;
 
@@ -56,8 +56,8 @@ class ScenaScelta extends Phaser.Scene {
       this.add.text(x, y - 80, o.nome, {
         fontSize: '21px', color: '#ffffff', fontStyle: 'bold', align: 'center', wordWrap: { width: largh - 24 },
       }).setOrigin(0.5);
-      const etichetta = o.rarita === 'combinazione' ? t('carta.combinazione')
-        : (o.livello > 1 ? t('carta.livello', o.livello) : t('carta.nuova')) + (o.rarita === 'rara' ? '  ·  ' + t('carta.rara') : '');
+      const etichetta = o.rarita === 'combinazione' ? tr('carta.combinazione')
+        : (o.livello > 1 ? tr('carta.livello', o.livello) : tr('carta.nuova')) + (o.rarita === 'rara' ? '  ·  ' + tr('carta.rara') : '');
       const coloreEtichetta = o.rarita === 'combinazione' ? '#f1c40f'
         : (o.rarita === 'rara' ? '#5dade2' : (o.livello > 1 ? '#6fd36f' : '#f2e6b8'));
       this.add.text(x, y - 42, etichetta, { fontSize: '15px', color: coloreEtichetta }).setOrigin(0.5);
@@ -73,7 +73,7 @@ class ScenaScelta extends Phaser.Scene {
 
     // Al posto di una maledetta si può riposare: cura una parte della vita (tasto 4)
     if (this.dati.tipo === 'maledetta') {
-      this.add.text(LARGHEZZA / 2, 500, t('carta.riposo', Math.round(RIPOSO_CURA * 100)), {
+      this.add.text(LARGHEZZA / 2, 500, tr('carta.riposo', Math.round(RIPOSO_CURA * 100)), {
         fontSize: '20px', color: '#6fd36f',
       })
         .setOrigin(0.5)
@@ -84,7 +84,7 @@ class ScenaScelta extends Phaser.Scene {
     // Al posto di un premio si può saltare: ogni tot premi saltati arriva un potere maledetto (tasto 4)
     if (this.dati.tipo === 'premio') {
       const saltati = this.dati.premiSaltati || 0;
-      this.add.text(LARGHEZZA / 2, 500, t('carta.salta', saltati, PREMI_SALTATI_PER_MALEDETTA), {
+      this.add.text(LARGHEZZA / 2, 500, tr('carta.salta', saltati, PREMI_SALTATI_PER_MALEDETTA), {
         fontSize: '20px', color: '#ff6b6b',
       })
         .setOrigin(0.5)

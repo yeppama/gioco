@@ -132,7 +132,7 @@ class Arco {
   sparaOnda(t) {
     const scena = this.scena;
     if (this.stats.frecceFaretra < COLPO_ONDA.faretraMinima) {
-      scena.interfaccia.mostraBanner(t('b.onda', COLPO_ONDA.faretraMinima));
+      scena.interfaccia.mostraBanner(tr('b.onda', COLPO_ONDA.faretraMinima));
       return;
     }
     if (t < this.prossimaOnda || !this.consuma(COLPO_ONDA.costo, t)) {

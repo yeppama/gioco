@@ -29,7 +29,7 @@ class ScenaPartita extends Phaser.Scene {
     this.exp = 0;
     this.expNecessaria = EXP_PRIMO_LIVELLO;
     // Scelte da mostrare appena possibile, in ordine. All'inizio si sceglie la prima abilità.
-    this.codaScelte = [{ tipo: 'abilita', titolo: t('scelta.prima') }];
+    this.codaScelte = [{ tipo: 'abilita', titolo: tr('scelta.prima') }];
     this.dannoNelRound = false;  // per il premio del round senza danni
     this.roundSenzaDanni = 0;    // quanti round di fila senza danni
     this.premiSaltati = 0;       // ogni PREMI_SALTATI_PER_MALEDETTA premi saltati = un potere maledetto
@@ -282,7 +282,7 @@ class ScenaPartita extends Phaser.Scene {
     while (this.overheal >= this.stats.vitaMax && this.scudiOverheal < OVERHEAL_SCUDI_MASSIMI) {
       this.overheal -= this.stats.vitaMax;
       this.scudiOverheal++;
-      this.interfaccia.mostraBanner(t('b.scudoOverheal'));
+      this.interfaccia.mostraBanner(tr('b.scudoOverheal'));
     }
     if (this.scudiOverheal >= OVERHEAL_SCUDI_MASSIMI) this.overheal = Math.min(this.overheal, this.stats.vitaMax);
   }
@@ -326,18 +326,18 @@ class ScenaPartita extends Phaser.Scene {
       this.exp -= this.expNecessaria;
       this.livello++;
       this.expNecessaria = Math.round(EXP_PRIMO_LIVELLO * Math.pow(CRESCITA_EXP, this.livello - 1));
-      this.codaScelte.push({ tipo: 'abilita', titolo: t('scelta.livello', this.livello) });
+      this.codaScelte.push({ tipo: 'abilita', titolo: tr('scelta.livello', this.livello) });
     }
   }
 
   // Chiamata da round.js quando un round finisce
   fineRound(numero, eraBoss) {
     // Benedizione divina: solo e soltanto dopo aver sconfitto un boss
-    if (eraBoss) this.codaScelte.push({ tipo: 'divina', titolo: t('scelta.divinaBoss') });
+    if (eraBoss) this.codaScelte.push({ tipo: 'divina', titolo: tr('scelta.divinaBoss') });
     // Round senza danni: un premio a scelta (e il contatore sale)
     if (!this.dannoNelRound) {
       this.roundSenzaDanni++;
-      this.codaScelte.push({ tipo: 'premio', titolo: t('scelta.premio') });
+      this.codaScelte.push({ tipo: 'premio', titolo: tr('scelta.premio') });
       this.scalaPerfetti();
     } else {
       this.roundSenzaDanni = 0;
@@ -353,8 +353,8 @@ class ScenaPartita extends Phaser.Scene {
     else if (n === S.doppioBossA) this.round.eventoProssimo = 'doppioboss';
     else if (n === S.bossFurboA) this.round.eventoProssimo = 'bossfurbo';
     else if (n >= S.premioA) {
-      this.codaScelte.push({ tipo: 'divina', titolo: t('scelta.perfetti1') });
-      this.codaScelte.push({ tipo: 'divina', titolo: t('scelta.perfetti2') });
+      this.codaScelte.push({ tipo: 'divina', titolo: tr('scelta.perfetti1') });
+      this.codaScelte.push({ tipo: 'divina', titolo: tr('scelta.perfetti2') });
       this.round.salta(S.salto);
       this.roundSenzaDanni = 0;
     }
@@ -362,7 +362,7 @@ class ScenaPartita extends Phaser.Scene {
 
   // Chiamata quando muore il mini boss
   bottinoMiniboss() {
-    this.codaScelte.push({ tipo: 'maledetta', titolo: t('scelta.sentinella') });
+    this.codaScelte.push({ tipo: 'maledetta', titolo: tr('scelta.sentinella') });
   }
 
   // Apre la schermata "scegli 1 tra 3" e mette in pausa la partita
@@ -390,7 +390,7 @@ class ScenaPartita extends Phaser.Scene {
           this.premiSaltati++;
           if (this.premiSaltati >= PREMI_SALTATI_PER_MALEDETTA) {
             this.premiSaltati = 0;
-            this.codaScelte.push({ tipo: 'maledetta', titolo: t('scelta.saltati') });
+            this.codaScelte.push({ tipo: 'maledetta', titolo: tr('scelta.saltati') });
           }
         } else if (id) {
           this.prendiAbilita(id);

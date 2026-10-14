@@ -1,7 +1,7 @@
 // ============================================================
 // LINGUA - italiano e inglese
 //
-// Ogni scritta del gioco passa da t('chiave', valori...): la funzione
+// Ogni scritta del gioco passa da tr('chiave', valori...): la funzione
 // sceglie la versione nella lingua attuale. Le abilità e le benedizioni
 // restano scritte in italiano nei loro file; qui c'è la loro traduzione
 // inglese (VOCI_EN), cercata per id.
@@ -139,7 +139,7 @@ const TESTI = {
   'fonte.Tiro circolare': { it: 'Tiro circolare', en: 'Circular shot' },
 };
 
-function t(chiave, ...valori) {
+function tr(chiave, ...valori) {
   const voce = TESTI[chiave];
   if (!voce) return chiave; // chiave mancante: si vede subito sullo schermo
   const testo = voce[LINGUA] || voce.it;

@@ -62,17 +62,17 @@ class Interfaccia {
     const s = this.scena;
     const arco = s.arco;
     // Le scritte fisse si rileggono ogni volta: così il cambio di lingua vale subito
-    this.testoAiuto.setText(t('hud.aiuto'));
-    if (this.testoDebug) this.testoDebug.setText(t('hud.debug'));
-    this.testoVita.setText(t('hud.vita', Math.ceil(s.vita), s.stats.vitaMax) + (s.invincibileDebug ? t('hud.invincibile') : ''));
-    this.testoLivello.setText(t('hud.livello', s.livello));
-    this.testoOverheal.setText(t('hud.overheal', Math.floor(s.overheal), s.stats.vitaMax) + (s.scudiOverheal > 0 ? t('hud.scudi', s.scudiOverheal) : ''));
-    this.testoPerfetti.setText(t('hud.perfetti', s.roundSenzaDanni));
+    this.testoAiuto.setText(tr('hud.aiuto'));
+    if (this.testoDebug) this.testoDebug.setText(tr('hud.debug'));
+    this.testoVita.setText(tr('hud.vita', Math.ceil(s.vita), s.stats.vitaMax) + (s.invincibileDebug ? tr('hud.invincibile') : ''));
+    this.testoLivello.setText(tr('hud.livello', s.livello));
+    this.testoOverheal.setText(tr('hud.overheal', Math.floor(s.overheal), s.stats.vitaMax) + (s.scudiOverheal > 0 ? tr('hud.scudi', s.scudiOverheal) : ''));
+    this.testoPerfetti.setText(tr('hud.perfetti', s.roundSenzaDanni));
     this.barraExp.setSize(LARGHEZZA * Phaser.Math.Clamp(s.exp / s.expNecessaria, 0, 1), 6);
 
     // Round e timer
-    const ciclo = s.round.ciclo() > 0 ? t('hud.ciclo', s.round.ciclo() + 1) : '';
-    this.testoRound.setText(s.round.numero > 0 ? t('hud.round', s.round.numero) + ciclo : '');
+    const ciclo = s.round.ciclo() > 0 ? tr('hud.ciclo', s.round.ciclo() + 1) : '';
+    this.testoRound.setText(s.round.numero > 0 ? tr('hud.round', s.round.numero) + ciclo : '');
     this.testoTimer.setText(s.round.testoStato(t));
 
     // Barra del boss: visibile solo se c'è un boss o mini boss in campo
@@ -89,13 +89,13 @@ class Interfaccia {
     // Frecce, carica e ricarica
     if (arco.inRicarica) {
       const avanzamento = 1 - (arco.fineRicarica - t) / s.stats.ricaricaMs; // da 0 a 1
-      this.testoFrecce.setText(t('hud.ricarica'));
+      this.testoFrecce.setText(tr('hud.ricarica'));
       this.barraRicarica.setVisible(true);
       this.barraRicarica.setPosition(s.giocatore.x - LATO_GIOCATORE / 2, s.giocatore.y + LATO_GIOCATORE / 2 + 8);
       this.barraRicarica.setSize(LATO_GIOCATORE * Phaser.Math.Clamp(avanzamento, 0, 1), 4);
     } else {
-      const carica = arco.staCaricando ? t('hud.carica', arco.carica) : '';
-      this.testoFrecce.setText(t('hud.frecce', arco.frecceRimaste, s.stats.frecceFaretra) + carica);
+      const carica = arco.staCaricando ? tr('hud.carica', arco.carica) : '';
+      this.testoFrecce.setText(tr('hud.frecce', arco.frecceRimaste, s.stats.frecceFaretra) + carica);
       this.barraRicarica.setVisible(false);
     }
   }
@@ -124,18 +124,18 @@ class Interfaccia {
     const totale = Object.values(s.danniPerFonte).reduce((a, b) => a + b, 0) || 1;
     const fonti = Object.entries(s.danniPerFonte)
       .sort((a, b) => b[1] - a[1])
-      .map(([fonte, danno]) => t('fonte.' + fonte) + ': ' + Math.round(danno) + ' (' + Math.round(danno / totale * 100) + '%)');
+      .map(([fonte, danno]) => tr('fonte.' + fonte) + ': ' + Math.round(danno) + ' (' + Math.round(danno / totale * 100) + '%)');
 
     const righe = [
-      t('m.morto'),
+      tr('m.morto'),
       '',
-      t('m.info', s.round.numero, s.livello, durata),
-      t('m.uccisi', s.uccisioni),
+      tr('m.info', s.round.numero, s.livello, durata),
+      tr('m.uccisi', s.uccisioni),
       '',
-      t('m.fonti'),
+      tr('m.fonti'),
       ...fonti,
       '',
-      t('m.ricomincia'),
+      tr('m.ricomincia'),
     ];
     s.add.rectangle(LARGHEZZA / 2, ALTEZZA / 2, LARGHEZZA, ALTEZZA, 0x000000, 0.6).setDepth(29).setScrollFactor(0);
     s.add.text(LARGHEZZA / 2, ALTEZZA / 2, righe.join('\n'), {

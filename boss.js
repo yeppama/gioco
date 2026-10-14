@@ -89,7 +89,7 @@ function aggiornaBoss(scena, n, t) {
     n.faseExtra = true;
     n.colore = d.faseExtra.colore;
     n.setFillStyle(n.colore);
-    scena.interfaccia.mostraBanner(t('b.custodeInfuria'));
+    scena.interfaccia.mostraBanner(tr('b.custodeInfuria'));
   }
   const pausa = n.faseExtra ? d.faseExtra.pausaTraAttacchiMs : d.pausaTraAttacchiMs;
 
