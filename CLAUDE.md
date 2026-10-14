@@ -11,3 +11,6 @@
 - Il gioco è pubblicato con GitHub Pages dal ramo `main`.
 - GitHub Pages tiene i file in cache 10 minuti: a ogni modifica di un .js aumenta il `?v=` di TUTTI gli script in `index.html`.
 - Dopo ogni push, aprire https://yeppama.github.io/gioco/ e controllare la console prima di dire a Stefano di giocare.
+- Per sapere quando GitHub Pages ha finito: `gh run list -R yeppama/gioco -L 1` e `gh run watch <id> -R yeppama/gioco`.
+- Test nel browser: con il pannello nascosto il gioco va a scatti; per simulare il tempo si chiama `window.gioco.step(t, 16.67)` in un ciclo (i tween però non avanzano). `?debug=1` attiva i tasti L, I, N, B, M.
+- Mai cicli `while` che dipendono da `getChildren()`: in Phaser 4 restituisce una copia e il ciclo non finisce.
