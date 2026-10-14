@@ -3,7 +3,8 @@
 // la logica della partita in partita.js
 // ============================================================
 
-new Phaser.Game({
+// Salvato in window.gioco per poterlo ispezionare dalla console del browser
+window.gioco = new Phaser.Game({
   type: Phaser.AUTO,         // Phaser sceglie da solo il modo migliore di disegnare
   width: LARGHEZZA,
   height: ALTEZZA,

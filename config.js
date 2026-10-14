@@ -12,10 +12,37 @@ const LATO_GIOCATORE = 32;  // grandezza del quadrato
 const VITA_MAX = 100;       // punti vita iniziali
 const INVULNERABILITA_MS = 800; // dopo un colpo, per quanto non si subisce altro danno
 
-// Nemico
-const VELOCITA_NEMICO = 120; // pixel al secondo
-const LATO_NEMICO = 28;
-const DANNO_NEMICO = 10;     // vita tolta a ogni contatto
+// Arco: spara solo quando il giocatore è fermo, nella direzione in cui guarda
+const CADENZA_MS = 400;          // un colpo ogni 0,4 secondi
+const VELOCITA_FRECCIA = 600;    // pixel al secondo
+const DANNO_FRECCIA = 10;
+const LATO_FRECCIA = 8;
+
+// Nemici: ogni tipo ha i suoi valori
+const TIPI_NEMICO = {
+  // Ti insegue e basta
+  inseguitore: { vita: 30, velocita: 120, danno: 10, lato: 28, colore: 0xe0453a },
+  // Ti insegue piano; quando è vicino si ferma, lampeggia e scatta in linea retta
+  caricatore: {
+    vita: 40, velocita: 80, danno: 20, lato: 30, colore: 0xe08a3a,
+    distanzaCarica: 220,   // da quanto vicino decide di caricare
+    preparazioneMs: 500,   // quanto lampeggia prima dello scatto (il tuo tempo per spostarti)
+    velocitaCarica: 520,   // velocità dello scatto
+    durataCaricaMs: 450,   // quanto dura lo scatto
+    recuperoMs: 900,       // dopo lo scatto resta fermo: è il momento per colpirlo
+  },
+};
+const RICOMPARSA_MS = 1500;           // dopo quanto riappare un nemico ucciso
+const DISTANZA_MIN_COMPARSA = 250;    // non compare mai più vicino di così al giocatore
+const PUNTI_COMPARSA = [
+  { x: 40, y: 40 }, { x: 400, y: 40 }, { x: 760, y: 40 },
+  { x: 40, y: 300 }, { x: 760, y: 300 },
+  { x: 40, y: 560 }, { x: 400, y: 560 }, { x: 760, y: 560 },
+];
+
+// Percorsi dei nemici (flow field): l'arena è divisa in caselle
+const CELLA_FLOW = 40;       // grandezza di una casella, in pixel
+const MARGINE_FLOW = 17;     // spazio lasciato attorno agli ostacoli (metà del nemico più grande)
 
 // Ostacoli: x e y sono il centro, l e a larghezza e altezza
 const OSTACOLI = [
