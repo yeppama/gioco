@@ -7,7 +7,7 @@ const LARGHEZZA = 800;      // larghezza dell'arena, in pixel
 const ALTEZZA = 600;        // altezza dell'arena, in pixel
 
 // Giocatore
-const VELOCITA = 500;       // pixel al secondo (valore scelto da te nella Fase 0)
+const VELOCITA = 250;       // pixel al secondo
 const LATO_GIOCATORE = 32;  // grandezza del quadrato
 const VITA_MAX = 100;       // punti vita iniziali
 const INVULNERABILITA_MS = 800; // dopo un colpo, per quanto non si subisce altro danno
