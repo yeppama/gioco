@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=30`, ~3600 righe di JavaScript in 24 file più la prova automatica.
+Stato: ottobre 2026, versione script `?v=31`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
@@ -35,10 +35,10 @@ Stato: ottobre 2026, versione script `?v=30`, ~3600 righe di JavaScript in 24 fi
 5. **Benedizioni**:
    - *Maledette*: le lascia il mini boss. Forti ma con un prezzo. Al loro posto c'è **Riposo** (cura il 20%).
    - *Divine*: solo dopo aver sconfitto un boss. Nessun prezzo.
-   - *Premi*: dopo ogni round senza danni (cura, vita max, frecce, velocità). Si possono **saltare**:
+   - *Premi*: dopo ogni round senza danni (cura, vita max, frecce, velocità, danno). Si possono **saltare**:
      2 premi saltati = 1 maledetta.
 6. **Scala dei round senza danni** (`scalaPerfetti` in `partita.js`): 3 di fila → mini boss a sorpresa;
-   5 → round più duro (×1.5); 7 → doppio boss; 9 → boss "furbo" che schiva, poi due mini boss;
+   5 → round più duro (×1.5); 7 → un boss solo ma con +50% vita (era il doppio boss, troppo duro); 9 → boss "furbo" che schiva, poi due mini boss;
    10 → due divine e salto di 20 round in avanti.
 7. Alla morte: riepilogo con tempo, round, uccisioni e danni per fonte. R ricomincia.
 
@@ -126,12 +126,15 @@ Tutto è globale: l'ordine dei `<script>` in `index.html` conta.
 ### Nemici (`TIPI_NEMICO`, `COMPARSA_TIPI`)
 inseguitore (dal round 1) · caricatore (dal 2, lampeggia e poi scatta in linea retta) · mortaio (dal 2,
 zone a terra) · tiratore (dal 3, sta a distanza e spara).
-**Élite** dal round 8 di ogni ciclo: ×6 vita, mira dove stai andando, resiste agli elementi.
+**Élite / capobranco** dal round 8 di ogni ciclo: ×3 vita (era ×6), mira dove stai andando, resiste agli
+elementi; finché vive, i nemici entro 160 px corrono il 20% in più (aura dorata visibile).
 Dopo ogni boss: +15% di resistenza agli elementi (massimo 60%).
 
 ### Difficoltà
-- Vita e danno ×(1 + 0.10·(round−1)) × (1 + 0.33·ciclo), senza mai ripartire da capo.
-- Velocità +7% a round dentro il ciclo, più +15% di aggressività per ciclo.
+- Vita e danno ×(1 + c·(round−1)) × (1 + 0.33·ciclo), senza mai ripartire da capo; c = 0.06 nel primo ciclo
+  (`PRIMO_CICLO`, più dolce per imparare) e 0.10 dal secondo.
+- Velocità +4% a round nel primo ciclo, +7% dal secondo, più +15% di aggressività per ciclo.
+- 15/10: Stefano trovava troppo difficile arrivare al round 10; addolciti primo ciclo, élite, scala e premi.
 - Il tempo tra un gruppo e l'altro scende col round assoluto, con un minimo che si abbassa a ogni ciclo.
 
 ### Abilità (`abilita.js`)
@@ -162,7 +165,8 @@ Faretra benedetta (+15 frecce e faretra piena all'istante uccidendo élite, mini
 (−30% ricarica e i nemici vicini vengono respinti, ×2) · Seconda vita (una volta per partita al 50%) ·
 Scia del vento (la schivata lascia una scia che ferisce) · Calice (+8% velocità per ogni scudo overheal attivo).
 
-Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Passo svelto (+10% velocità).
+Premi: Respiro (cura 40%) · Tempra (+15% vita max) · Faretra ampia (+6) · Passo svelto (+10% velocità) ·
+Mano ferma (+10% danno).
 
 ## 5. Regole del codice (riassunto di `CLAUDE.md` più quelle emerse col lavoro)
 

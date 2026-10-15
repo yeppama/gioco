@@ -36,6 +36,7 @@ class ScenaPartita extends Phaser.Scene {
     // Overheal: cure in più a vita piena; a una vita intera si guadagna uno scudo
     this.overheal = 0;
     this.scudiOverheal = 0;
+    this.capibranco = [];        // élite vive (la loro aura accelera i nemici vicini)
     this.bossAttivo = null;      // il boss o mini boss in campo (per la sua barra della vita)
     // Benedizioni con regole speciali
     this.seteBonus = 0;          // Sete di battaglia: danno in più accumulato in questo round
@@ -177,6 +178,8 @@ class ScenaPartita extends Phaser.Scene {
     // Nemici: prima si aggiorna la mappa dei percorsi, poi ognuno si muove
     const visto = this.vista();
     this.flowField.aggiorna(visto.x, visto.y);
+    // I capobranco (élite, non i boss) vivi in questo fotogramma: servono per la loro aura
+    this.capibranco = this.nemici.getChildren().filter(n => n.elite && !n.eBoss);
     for (const n of this.nemici.getChildren().slice()) aggiornaNemico(this, n, t);
 
     this.arco.controllaBordi();

@@ -49,7 +49,9 @@ class GestoreRound {
   // Vita e danno: +10% a ogni round (senza mai ripartire da capo) e +33% per ogni boss sconfitto
   moltiplicatore() {
     const round = Math.max(1, this.numero);
-    return (1 + CRESCITA_PER_ROUND * (round - 1)) * (1 + CRESCITA_PER_CICLO * this.ciclo()) * this.moltExtra;
+    // Nel primo ciclo si cresce più piano (PRIMO_CICLO), poi la crescita normale
+    const crescita = this.ciclo() === 0 ? PRIMO_CICLO.crescitaPerRound : CRESCITA_PER_ROUND;
+    return (1 + crescita * (round - 1)) * (1 + CRESCITA_PER_CICLO * this.ciclo()) * this.moltExtra;
   }
 
   // Dopo i 45 secondi i nemici rimasti accelerano sempre di più
@@ -94,7 +96,8 @@ class GestoreRound {
 
   // Velocità dei nemici in questo round: +7% a round dentro il ciclo
   moltiplicatoreVelocita() {
-    return 1 + VELOCITA_PER_ROUND * (this.roundNelCiclo() - 1);
+    const perRound = this.ciclo() === 0 ? PRIMO_CICLO.velocitaPerRound : VELOCITA_PER_ROUND;
+    return 1 + perRound * (this.roundNelCiclo() - 1);
   }
 
   // --- Andamento del round ---
@@ -159,12 +162,14 @@ class GestoreRound {
     // Eventi della scala dei round senza danni
     const evento = this.eventoProssimo;
     this.eventoProssimo = null;
-    if (evento === 'doppioboss' || evento === 'bossfurbo' ) {
+    if (evento === 'bossforte' || evento === 'bossfurbo' ) {
       this.tipo = 'evento';
-      if (evento === 'doppioboss') {
-        generaBoss(this.scena, 'boss');
-        generaBoss(this.scena, 'boss');
-        this.scena.interfaccia.mostraBanner(tr('b.doppioBoss'));
+      if (evento === 'bossforte') {
+        // Un boss solo, ma con più vita
+        const boss = generaBoss(this.scena, 'boss');
+        boss.vitaMax = Math.round(boss.vitaMax * SCALA_PERFETTI.vitaBossForte);
+        boss.vita = boss.vitaMax;
+        this.scena.interfaccia.mostraBanner(tr('b.bossForte'));
       } else {
         rendiFurbo(generaBoss(this.scena, 'boss'));
         this.dopoBossFurbo = true;

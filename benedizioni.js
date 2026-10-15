@@ -147,6 +147,11 @@ const PREMI = [
     descrizione: () => 'Ti muovi il ' + Math.round(PREMIO.velocita * 100) + '% più veloce',
     applica: (s, liv) => { s.velocita *= Math.pow(1 + PREMIO.velocita, liv); },
   },
+  {
+    id: 'premiodanno', nome: 'Mano ferma', max: 999,
+    descrizione: () => '+' + Math.round(PREMIO.danno * 100) + '% danno',
+    applica: (s, liv) => { s.dannoMolt *= Math.pow(1 + PREMIO.danno, liv); },
+  },
 ];
 
 // Trova una voce in qualsiasi tabella (serve per "alPrendere")

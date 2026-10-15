@@ -80,7 +80,7 @@ const TESTI = {
   'b.dueSentinelle': { it: 'E ora due Sentinelle!', en: 'And now two Sentinels!' },
   'b.sentinellaTrova': { it: 'Una Sentinella ti ha trovato!', en: 'A Sentinel has found you!' },
   'b.eliminaRimasti': { it: 'Elimina i rimasti!', en: 'Finish them off!' },
-  'b.doppioBoss': { it: 'Doppio boss!', en: 'Double boss!' },
+  'b.bossForte': { it: 'Il Custode è più forte!', en: 'The Warden grows stronger!' },
   'b.custodeStudia': { it: 'Il Custode ti studia...', en: 'The Warden is studying you...' },
   'b.custodeInfuria': { it: 'Il Custode si infuria!', en: 'The Warden is enraged!' },
   'b.round': { it: (n) => 'Round ' + n, en: (n) => 'Round ' + n },
@@ -205,6 +205,7 @@ const VOCI_EN = {
   premiovita: { nome: 'Fortitude', descrizione: () => '+' + Math.round(PREMIO.vitaMax * 100) + '% max health' },
   premiofrecce: { nome: 'Wide quiver', descrizione: () => '+' + PREMIO.frecce + ' arrows in the quiver' },
   premiovelocita: { nome: 'Swift step', descrizione: () => 'Move ' + Math.round(PREMIO.velocita * 100) + '% faster' },
+  premiodanno: { nome: 'Steady hand', descrizione: () => '+' + Math.round(PREMIO.danno * 100) + '% damage' },
 };
 
 // Nome e descrizione di una voce (abilità, benedizione...) nella lingua attuale

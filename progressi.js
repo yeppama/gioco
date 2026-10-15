@@ -50,7 +50,7 @@ const METODI_PROGRESSI = {
     const S = SCALA_PERFETTI;
     if (n === S.minibossA) this.round.eventoProssimo = 'miniboss';
     else if (n === S.difficileA) this.round.eventoProssimo = 'difficile';
-    else if (n === S.doppioBossA) this.round.eventoProssimo = 'doppioboss';
+    else if (n === S.bossForteA) this.round.eventoProssimo = 'bossforte';
     else if (n === S.bossFurboA) this.round.eventoProssimo = 'bossfurbo';
     else if (n >= S.premioA) {
       this.codaScelte.push({ tipo: 'divina', titolo: tr('scelta.perfetti1') });

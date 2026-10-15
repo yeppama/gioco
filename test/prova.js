@@ -153,6 +153,39 @@ const PROVE = {
     return problemi;
   },
 
+  // Capobranco: l'élite accelera i nemici vicini, e la sua aura sparisce con lui
+  capobranco: () => {
+    const problemi = [];
+    const s = window.nuovaPartita('muove');
+    s.invincibileDebug = true;
+    const g = s.giocatore;
+    const capo = generaNemico(s, 'inseguitore', g.x + 300, g.y, true);
+    const vicino = generaNemico(s, 'inseguitore', g.x + 340, g.y);
+    const lontano = generaNemico(s, 'inseguitore', g.x - 300, g.y);
+    window.passi(1);
+    const vVicino = velocitaNemico(s, vicino, 100, s.tempo);
+    const vLontano = velocitaNemico(s, lontano, 100, s.tempo);
+    if (Math.abs(vVicino / vLontano - ELITE.aura.velocita) > 0.01) problemi.push('aura: il nemico vicino non accelera (' + (vVicino / vLontano).toFixed(2) + ')');
+    const aura = capo.aura;
+    colpisciNemico(s, capo, 999999);
+    window.passi(1);
+    if (aura.active) problemi.push("l'aura resta dopo la morte del capobranco");
+    return problemi;
+  },
+
+  // Scala dei round perfetti: a 7 arriva UN boss con più vita
+  bossForte: () => {
+    const s = window.nuovaPartita('muove');
+    s.invincibileDebug = true;
+    s.round.eventoProssimo = 'bossforte';
+    for (let i = 0; i < 600 && s.round.tipo !== 'evento'; i++) window.passi(1);
+    const boss = s.nemici.getChildren().filter(n => n.tipoNemico === 'boss');
+    if (boss.length !== 1) return ['boss forte: ' + boss.length + ' boss invece di 1'];
+    const normale = Math.round(BOSS.vita * s.round.moltiplicatore());
+    if (boss[0].vitaMax < normale * SCALA_PERFETTI.vitaBossForte - 2) return ['boss forte senza vita in più'];
+    return [];
+  },
+
   // Il round del boss parte e si gioca senza errori
   roundBoss: () => {
     const s = window.nuovaPartita('muove');

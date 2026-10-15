@@ -30,6 +30,9 @@ function generaNemico(scena, tipo, x, y, elite = false) {
     n.moltDanno *= ELITE.danno;
     n.dannoContatto = Math.round(n.dannoContatto * ELITE.danno);
     n.exp *= ELITE.exp;
+    // Aura del capobranco: un cerchio dorato che mostra fin dove accelera gli altri
+    n.aura = scena.add.circle(x, y, ELITE.aura.raggio, ELITE.colore, 0.06).setStrokeStyle(1, ELITE.colore, 0.35).setDepth(-2);
+    n.once('destroy', () => n.aura.destroy());
   }
   n.stato = 'insegue';  // caricatore: insegue, prepara, carica, recupero / tiratore: muove, mira
   n.prossimoTiro = scena.tempo + (dati.cadenzaMs || 0);
@@ -70,9 +73,18 @@ function preparaNemico(scena, n, tipo, dati, molt) {
 // Velocità reale di un nemico in questo momento: difficoltà, furia, gelo...
 function velocitaNemico(scena, n, base, t) {
   let v = base * n.moltVelocita * scena.stats.velocitaNemiciMolt;
+  // Vicino a un capobranco (élite) vivo si corre di più
+  if (!n.elite && !n.eBoss && vicinoACapobranco(scena, n)) v *= ELITE.aura.velocita;
   if (!n.eBoss) v *= scena.round.furia(t);
   if (t < n.rallentatoFino) v *= 1 - n.rallentamento;
   return v;
+}
+
+function vicinoACapobranco(scena, n) {
+  for (const c of scena.capibranco) {
+    if (Phaser.Math.Distance.Between(c.x, c.y, n.x, n.y) <= ELITE.aura.raggio) return true;
+  }
+  return false;
 }
 
 // Chiamata ogni fotogramma per ogni nemico vivo
@@ -91,6 +103,7 @@ function aggiornaNemico(scena, n, t) {
 
   if (t < n.spintaFino) return; // sta volando via, respinto
 
+  if (n.aura) n.aura.setPosition(n.x, n.y);
   if (n.eBoss) aggiornaBoss(scena, n, t);
   else if (n.tipoNemico === 'caricatore') aggiornaCaricatore(scena, n, t);
   else if (n.tipoNemico === 'tiratore') aggiornaTiratore(scena, n, t);

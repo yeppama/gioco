@@ -60,7 +60,8 @@ const SCALA_PERFETTI = {
   minibossA: 3,         // a 3 round senza danni: un mini boss compare nel round dopo
   difficileA: 5,        // a 5: il round dopo è più duro
   moltDifficile: 1.5,   // quanto più duro (vita e danno dei nemici)
-  doppioBossA: 7,       // a 7: doppio boss
+  bossForteA: 7,        // a 7: un boss più forte (era il doppio boss)
+  vitaBossForte: 1.5,   // quanta vita in più ha
   bossFurboA: 9,        // a 9: un boss che legge i movimenti e schiva, poi doppio mini boss
   premioA: 10,          // a 10: due benedizioni divine e salto in avanti
   salto: 20,            // round saltati
@@ -128,7 +129,7 @@ const PESI_RARITA = { comune: 10, rara: 4, leggendaria: 1 };
 // Benedizioni divine: solo dopo aver sconfitto un boss.
 // Round senza danni: premio a scelta tra vita, frecce e velocità.
 const RIPOSO_CURA = 0.2;   // la quarta opzione delle maledette: cura il 20% della vita
-const PREMIO = { cura: 0.3, vitaMax: 0.1, frecce: 4, velocita: 0.1 };
+const PREMIO = { cura: 0.4, vitaMax: 0.15, frecce: 6, velocita: 0.1, danno: 0.1 };
 const PREMI_SALTATI_PER_MALEDETTA = 2; // saltando 2 premi si ottiene un potere maledetto
 
 // Carte proposte a ogni scelta (abilità, benedizioni, premi)
@@ -250,6 +251,8 @@ const OGNI_QUANTI_ROUND_BOSS = 10;
 const OGNI_QUANTI_ROUND_MINIBOSS = 7;  // se coincide con il boss, vince il boss
 const CRESCITA_PER_ROUND = 0.10;      // vita e danno: +10% a ogni round (non riparte dopo il boss)
 const VELOCITA_PER_ROUND = 0.07;      // velocità: +7% a ogni round del ciclo
+// Primo ciclo (round 1-10) più dolce, per imparare: valgono questi al posto dei due sopra
+const PRIMO_CICLO = { crescitaPerRound: 0.06, velocitaPerRound: 0.04 };
 const CRESCITA_PER_CICLO = 0.33;      // vita e danno: +33% dopo ogni boss
 const AGGRESSIVITA_PER_CICLO = 0.15;  // dopo ogni boss: +15% velocità, attacchi più frequenti e annunci più brevi
 
@@ -303,11 +306,13 @@ const CONSUMABILI = {
   distanzaMax: 500,
 };
 
-// Nemici d'élite: dopo il round 7 di ogni ciclo, uno per round fino al boss.
-// Più grandi, resistenti e "furbi": mirano dove stai andando, non dove sei.
+// Nemici d'élite ("capobranco"): dopo il round 7 di ogni ciclo, uno per round fino al boss.
+// Più grandi e "furbi" (mirano dove stai andando). Finché sono vivi, i nemici
+// attorno a loro corrono di più: conviene ucciderli per primi.
 const ELITE = {
   dopoRound: 7,
-  vita: 6, velocita: 1.15, danno: 1.3, lato: 1.3, exp: 5,
+  vita: 3, velocita: 1.15, danno: 1.3, lato: 1.3, exp: 5,   // vita: era 6
+  aura: { raggio: 160, velocita: 1.2 },  // nemici entro 160 px: +20% velocità
   previsioneS: 0.45,    // quanto in avanti prevedono i tuoi movimenti, in secondi
   colore: 0xf1c40f,     // bordo dorato
 };
