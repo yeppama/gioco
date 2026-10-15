@@ -189,8 +189,8 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
 
 ## 7. Debito tecnico e ottimizzazioni consigliate (in ordine di utilità)
 
-1. ~~Test automatici~~ fatto (`test/prova.js`). Possibili aggiunte: una prova per ogni benedizione con
-   regola speciale (es. Seconda vita che si attiva una sola volta), e una prova del menu pausa e della lingua.
+1. ~~Test automatici~~ fatto (`test/prova.js`), con prove del menu pausa e di Seconda vita. Possibile
+   aggiunta: una prova per ognuna delle altre benedizioni con regola speciale.
 2. ~~`partita.js` troppo grande~~ fatto: diviso in `vita.js`, `combattimento.js`, `progressi.js`.
    `prendiAbilita` ora ignora le voci già al massimo (la prova aveva trovato Casinò al livello 4 = NaN).
 3. ~~Numeri sparsi~~ fatto: abilità (`NUMERI_ABILITA`), boss (`BOSS_COMUNI`, `BOSS_FURBO`, evocazione e
@@ -209,8 +209,10 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
    Attenzione: due `const` globali con lo stesso nome in due file diversi bloccano tutto il gioco.
 7. Le **chiavi delle fonti di danno** sono in italiano (`'Frecce'`, `'Fuoco'`…) e servono anche da chiave di
    traduzione: funziona, ma un id neutro (`'frecce'`) sarebbe più pulito.
-8. Il **menu pausa** non mostra le regole speciali attive (bonus attuale di Sete di battaglia, Seconda vita
-   già usata, invisibilità…).
+8. ~~Menu pausa senza regole speciali~~ fatto: mostra scudi overheal, Sete di battaglia, Ultimo respiro
+   attivo o no, Seconda vita pronta o usata, cure e danno contro i boss. Le colonne si impilano da sole e
+   rimpiccioliscono il testo se serve (`colonna()` in `pausa.js`); la prova controlla che nessuna scritta
+   si sovrapponga o esca dallo schermo, in italiano e in inglese.
 9. `vitaNemiciMolt` (Occhi di brace) vale solo per i nemici nati **dopo** averla presa. Voluto, ma non scritto.
 
 ## 8. Da fare (rimandato, in ordine indicativo)

@@ -33,22 +33,22 @@ class ScenaPausa extends Phaser.Scene {
       return righe.length > 0 ? righe.join('\n') : '—';
     };
 
-    // Colonna sinistra: abilità
-    titolo(40, 110, tr('p.abilita'), '#f2e6b8');
-    testo(40, 140, elenco([...ABILITA, ...COMBINAZIONI]));
     // Ricette delle combinazioni, così si possono scoprire
     const ricette = COMBINAZIONI.map(c => nomeDi(c) + ':\n  ' + Object.entries(c.requisiti)
       .map(([id, liv]) => nomeDi(trovaVoce(id)) + ' ' + liv).join(' + ')).join('\n');
-    titolo(40, 420, tr('p.combinazioni'), '#f1c40f');
-    testo(40, 448, ricette, { fontSize: '14px' });
 
-    // Colonna centrale: benedizioni
-    titolo(300, 110, tr('p.divine'), '#f7d774');
-    testo(300, 140, elenco(DIVINE));
-    titolo(300, 250, tr('p.maledette'), '#ff6b6b');
-    testo(300, 280, elenco(MALEDETTE));
-    titolo(300, 370, tr('p.premi'), '#6fd36f');
-    testo(300, 400, elenco(PREMI));
+    // Colonna sinistra: abilità, combinazioni e premi. Centrale: benedizioni.
+    // Le sezioni si mettono una sotto l'altra (non a posizioni fisse),
+    // così una lista lunga spinge giù le altre invece di sovrapporsi.
+    this.colonna(40, [
+      { titolo: tr('p.abilita'), colore: '#f2e6b8', testo: elenco([...ABILITA, ...COMBINAZIONI]) },
+      { titolo: tr('p.combinazioni'), colore: '#f1c40f', testo: ricette, piccolo: true },
+      { titolo: tr('p.premi'), colore: '#6fd36f', testo: elenco(PREMI) },
+    ]);
+    this.colonna(300, [
+      { titolo: tr('p.divine'), colore: '#f7d774', testo: elenco(DIVINE) },
+      { titolo: tr('p.maledette'), colore: '#ff6b6b', testo: elenco(MALEDETTE) },
+    ]);
 
     // Colonna destra: statistiche reali
     const frecceRaffica = (1 + s.frecceParallele) * (1 + 2 * s.coppieDiagonali);
@@ -59,7 +59,8 @@ class ScenaPausa extends Phaser.Scene {
       tr('st.perRaffica', frecceRaffica),
       tr('st.faretra', s.frecceFaretra),
       tr('st.ricarica', (s.ricaricaMs / 1000).toFixed(1)),
-      tr('st.schivata', s.costoSchivata),
+      // Corpo di cenere: la schivata costa vita, non frecce
+      s.schivataDiVita > 0 ? tr('st.schivataVita', percentuale(s.schivataDiVita)) : tr('st.schivata', s.costoSchivata),
       tr('st.velocita', Math.round(s.velocita)),
     ];
     if (s.rimbalzi > 0) righe.push(tr('st.rimbalzi', s.rimbalzi));
@@ -67,8 +68,17 @@ class ScenaPausa extends Phaser.Scene {
     if (s.raggioMira > 0) righe.push(tr('st.mira', s.raggioMira));
     if (s.frecciaGratis > 0) righe.push(tr('st.gratis', Math.round(s.frecciaGratis * 100)));
     if (s.expMolt !== 1) righe.push(tr('st.esperienza', s.expMolt.toFixed(2)));
+    // Regole speciali delle benedizioni: come stanno ADESSO
+    if (s.dannoBossMolt !== 1) righe.push(tr('st.dannoBoss', s.dannoBossMolt.toFixed(2)));
+    if (s.cureMolt !== 1) righe.push(tr('st.cure', s.cureMolt.toFixed(2)));
+    if (p.scudiOverheal > 0 || s.velocitaPerScudo > 0) righe.push(tr('st.scudi', p.scudiOverheal, OVERHEAL_SCUDI_MASSIMI));
+    if (s.setePerUccisione > 0) righe.push(tr('st.sete', percentuale(p.seteBonus)));
+    if (s.ultimoRespiro) righe.push(tr(p.vitaCritica() ? 'st.ultimoAttivo' : 'st.ultimoSpento'));
+    if (s.secondaVita) righe.push(tr(p.secondaVitaUsata ? 'st.secondaUsata' : 'st.secondaPronta'));
     titolo(560, 110, tr('p.statistiche'), '#7fd6ff');
-    testo(560, 140, righe.join('\n'));
+    // Con tante righe si rimpicciolisce il testo, così non finisce sotto i pulsanti
+    const piccolo = righe.length > 12;
+    testo(560, 140, righe.join('\n'), piccolo ? { fontSize: '13px', lineSpacing: 2 } : {});
 
     // Pulsanti
     this.pulsante(LARGHEZZA / 2 - 220, ALTEZZA - 60, tr('p.riprendi'), () => this.riprendi());
@@ -81,6 +91,28 @@ class ScenaPausa extends Phaser.Scene {
 
     this.input.keyboard.on('keydown-ESC', () => this.riprendi());
     this.input.keyboard.on('keydown-P', () => this.riprendi());
+  }
+
+  // Disegna delle sezioni (titolo + testo) una sotto l'altra, da y=110 in giù.
+  // Se non ci stanno sopra i pulsanti, riprova con caratteri più piccoli.
+  colonna(x, sezioni) {
+    const fondo = ALTEZZA - 90;
+    for (let grandezza = 16; grandezza >= 10; grandezza--) {
+      const oggetti = [];
+      let y = 110;
+      for (const sez of sezioni) {
+        const titolo = this.add.text(x, y, sez.titolo, { fontSize: (grandezza + 3) + 'px', color: sez.colore, fontStyle: 'bold' });
+        y += titolo.height + 6;
+        const testo = this.add.text(x, y, sez.testo, {
+          fontSize: (sez.piccolo ? grandezza - 2 : grandezza) + 'px', color: '#cfcfd8', lineSpacing: grandezza > 13 ? 4 : 2,
+        });
+        y += testo.height + 14;
+        oggetti.push(titolo, testo);
+      }
+      // Ci sta (o è già il carattere più piccolo): si tiene così
+      if (y - 14 <= fondo || grandezza === 10) return;
+      for (const o of oggetti) o.destroy();
+    }
   }
 
   pulsante(x, y, etichetta, azione) {

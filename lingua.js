@@ -119,6 +119,15 @@ const TESTI = {
   'st.perforazioni': { it: (n) => 'Perforazioni: ' + n, en: (n) => 'Pierces: ' + n },
   'st.mira': { it: (n) => 'Mira automatica: ' + n + ' px', en: (n) => 'Auto-aim: ' + n + ' px' },
   'st.esperienza': { it: (x) => 'Esperienza: x' + x, en: (x) => 'Experience: x' + x },
+  'st.schivataVita': { it: (n) => 'Schivata: ' + n + '% vita', en: (n) => 'Dodge: ' + n + '% health' },
+  'st.dannoBoss': { it: (x) => 'Danno su boss ed élite: x' + x, en: (x) => 'Vs bosses/elites: x' + x },
+  'st.cure': { it: (x) => 'Cure: x' + x, en: (x) => 'Healing: x' + x },
+  'st.scudi': { it: (a, b) => 'Scudi overheal: ' + a + ' / ' + b, en: (a, b) => 'Overheal shields: ' + a + ' / ' + b },
+  'st.sete': { it: (n) => 'Sete di battaglia: +' + n + '% danno', en: (n) => 'Battle thirst: +' + n + '% damage' },
+  'st.ultimoAttivo': { it: 'Ultimo respiro: ATTIVO (danno x2)', en: 'Last breath: ACTIVE (damage x2)' },
+  'st.ultimoSpento': { it: 'Ultimo respiro: non attivo', en: 'Last breath: inactive' },
+  'st.secondaPronta': { it: 'Seconda vita: pronta', en: 'Second life: ready' },
+  'st.secondaUsata': { it: 'Seconda vita: usata', en: 'Second life: used' },
   'st.gratis': { it: (n) => 'Colpi gratis: ' + n + '%', en: (n) => 'Free shots: ' + n + '%' },
 
   // Fine run

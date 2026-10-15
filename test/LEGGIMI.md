@@ -7,6 +7,8 @@
 - tutto preso insieme giri 60 secondi senza errori e senza valori rotti (NaN);
 - chi resta fermo muoia nel round 1;
 - il round del boss parta e si giochi;
+- il menu pausa, con tutto preso, non abbia scritte sovrapposte o fuori schermo (italiano e inglese);
+- Seconda vita salvi una volta sola;
 - ogni scritta e ogni carta abbia l'italiano e l'inglese, e ogni `tr('...')` del codice esista in `lingua.js`.
 
 Non fa parte del gioco: `index.html` non la carica, e il gioco resta senza npm.
