@@ -17,7 +17,8 @@ class ScenaPausa extends Phaser.Scene {
   }
 
   init(dati) {
-    this.partita = dati.partita;
+    // Se per qualche motivo i dati non arrivano, si tiene la partita di prima
+    this.partita = (dati && dati.partita) || this.partita;
     this.chiusa = false;
     // Si riapre sull'ultima pagina guardata
     this.pagina = dati.pagina || this.partita.paginaPausa || 'abilita';
@@ -154,7 +155,8 @@ class ScenaPausa extends Phaser.Scene {
   }
 
   vaiA(pagina) {
-    if (this.chiusa) return;
+    // Solo se la pausa è già aperta e disegnata (sennò il riavvio perderebbe i dati)
+    if (this.chiusa || !this.sys.isActive()) return;
     this.scene.restart({ partita: this.partita, pagina });
   }
 
