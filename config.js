@@ -101,15 +101,16 @@ const TIRO_CIRCOLARE = {
   tempi: [[30, 7], [40, 6], [50, 5], [60, 4], [100, 1.5]],
 };
 
-// Fulmine: punisce chi resta fermo. Dopo graziaMs da fermo colpisce ogni intervalloMs;
-// ogni colpo fa "moltiplicatore" volte il danno del precedente.
-// Muovendosi il contatore scende (più in fretta se si va veloci).
-const FULMINE = {
-  graziaMs: 1000,
-  intervalloMs: 1000,
-  dannoBase: 1,         // primo colpo; poi x1.75 a ogni colpo (1, 1.75, 3, 5.4, 9.4, 16...)
-  moltiplicatore: 1.75,
-  caloAlSecondo: 1.5,   // livelli persi al secondo muovendosi a velocità base
+// Regola anti-fermo: chi resta fermo viene raggiunto dai nemici.
+// "Fermo" = resti dentro un cerchio di raggio px dal punto in cui ti sei fermato.
+// Ogni intervalloMs da fermo compare un gruppo di nemici, ogni volta più vicino
+// (distanze in pixel, poi resta sull'ultima). Uscendo dal cerchio tutto riparte.
+const ANTI_FERMO = {
+  raggio: 80,
+  intervalloMs: 4000,
+  nemici: 3,
+  distanze: [400, 300, 200, 120],
+  avvisoDa: 0.5,   // il cerchio d'avviso compare a metà attesa
 };
 
 // Overheal: a vita piena, le cure in più si accumulano; quando arrivano a una
@@ -145,6 +146,9 @@ const NUMERI_ABILITA = {
   scudo: { baseS: 12, menoPerLivelloS: 3 }, // ricarica dello scudo: 9, 6, 3 secondi
   passo: { frecce: 2 },                   // frecce in meno per schivata, a livello
   ventofortuna: { gratis: 0.75 },
+  faretracapiente: { frecce: 10 },         // frecce in più nella faretra, a livello
+  recupero: { probabilita: [0.5, 1] },     // probabilità di riavere 1 freccia a uccisione, per livello
+  tripla: { frecce: 3, costo: 2, distanza: 16 }, // 3 frecce in fila (16 px l'una dall'altra), la raffica costa 2
 };
 
 // Numeri delle benedizioni (maledette e divine), una voce per benedizione
@@ -156,14 +160,14 @@ const BENEDIZIONI = {
   occhidibrace: { exp: 1.35, velocitaNemici: 1.2, vitaNemici: 1.2 },
   miraossessiva: { raggio: 300, cadenza: 1.25, vitaMax: 0.85 }, // cadenza 1.25 = spari il 25% più piano
   ultimorespiro: { soglia: 0.3, danno: 2, cure: 0.5 },        // cure dimezzate; sotto la soglia si ferma Rigenerazione
-  pattofulmine: { graziaMs: 500, raggio: 130, moltDannoNemici: 4 }, // il fulmine colpisce anche i nemici vicini
+  radici: { danno: 1.5, intervalloMs: 2000 },                 // da fermo +50% danno, ma i nemici arrivano ogni 2 s
   ombralenta: { costoSchivata: 2, invisibileMs: 1000 },       // dopo la schivata i nemici ti perdono di vista
   setebattaglia: { dannoPerUccisione: 0.02, dannoMassimo: 0.4, intervalloOndate: 0.75 },
   corpocenere: { vitaPerSchivata: 0.03 },                     // la schivata costa vita invece di frecce
   // --- Divine ---
   luce: { scudi: 1 },                                         // cura completa + scudi overheal
   vento: { velocita: 0.15 },
-  faretrabenedetta: { frecce: 8, frecceIndietro: 1 },         // frecce restituite a ogni uccisione
+  faretrabenedetta: { frecce: 15 },                          // e ricarica istantanea uccidendo élite, mini boss o boss
   giudizio: { danno: 0.2, dannoBoss: 0.2 },                   // contro boss ed élite: +20% e poi altri +20%
   mira: { raggio: 350 },
   ricaricasacra: { ricarica: 0.7, raggioSpinta: 160, forzaSpinta: 520, durataSpintaMs: 220 },

@@ -42,12 +42,15 @@ function calcolaStatistiche(livelli) {
     velocitaSePiena: 1,   // velocità con più di metà faretra
     vitaPerUccisione: 0,
     ultimoRespiro: false,
-    fulmineSuNemici: false,
-    graziaFulmineMs: FULMINE.graziaMs,
+    intervalloFermoMs: ANTI_FERMO.intervalloMs, // ogni quanto i nemici raggiungono chi sta fermo
+    dannoDaFermo: 1,      // Radici di pietra: danno in più restando fermi
     invisibileMs: 0,
     setePerUccisione: 0,
     schivataDiVita: 0,    // > 0 = la schivata costa questa parte di vita invece delle frecce
-    frecceUccisione: 0,
+    recuperoFrecce: 0,    // probabilità di riavere una freccia a ogni uccisione
+    ricaricaSuForti: false, // Faretra benedetta: ricarica istantanea uccidendo élite e boss
+    frecceInFila: 1,      // Freccia tripla: frecce una dietro l'altra
+    costoRaffica: 1,      // frecce consumate da ogni raffica
     spintaRicarica: false,
     secondaVita: false,
     sciaSchivata: false,

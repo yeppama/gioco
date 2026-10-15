@@ -135,6 +135,24 @@ const PROVE = {
     return [];
   },
 
+  // Regola anti-fermo: da fermo arrivano gruppi sempre più vicini; muovendosi no
+  antiFermo: () => {
+    const problemi = [];
+    const s = window.nuovaPartita('fermo');
+    s.invincibileDebug = true;
+    // si aspetta che il round sia cominciato
+    for (let i = 0; i < 300 && s.round.fase === 'pausa'; i++) window.passi(1);
+    const vicini = () => s.nemici.getChildren().filter(n => Phaser.Math.Distance.Between(n.x, n.y, s.giocatore.x, s.giocatore.y) < 450).length;
+    // Si conta il tempo di gioco, non i fotogrammi: durante le scelte di livello la partita è ferma
+    const aspetta = (ms) => { const fine = s.tempo + ms; for (let i = 0; i < 5000 && s.tempo < fine; i++) window.passi(1); };
+    aspetta(ANTI_FERMO.intervalloMs + 100);
+    if (s.antiFermo.arrivi < 1) problemi.push('dopo ' + ANTI_FERMO.intervalloMs + ' ms fermo non è arrivato nessun gruppo');
+    if (vicini() < ANTI_FERMO.nemici) problemi.push('il gruppo non è comparso vicino al giocatore');
+    aspetta(3 * ANTI_FERMO.intervalloMs);
+    if (s.antiFermo.arrivi < 4) problemi.push('da fermo per 4 attese sono arrivati solo ' + s.antiFermo.arrivi + ' gruppi');
+    return problemi;
+  },
+
   // Il round del boss parte e si gioca senza errori
   roundBoss: () => {
     const s = window.nuovaPartita('muove');

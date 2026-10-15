@@ -295,7 +295,7 @@ function colpisciNemico(scena, n, danno, fonte = 'Frecce') {
   if (n.vita <= 0) {
     scena.uccisioni++;
     scena.guadagnaExp(n.exp);
-    scena.alUccidere();
+    scena.alUccidere(n);
     if (n.tipoNemico === 'miniboss') scena.bottinoMiniboss();
     if (n.avviso) n.avviso.destroy();
     if (n === scena.bossAttivo) scena.bossAttivo = null;

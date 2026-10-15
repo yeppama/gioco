@@ -52,9 +52,9 @@ const MALEDETTE = [
     applica: (s) => { s.ultimoRespiro = true; s.cureMolt *= BENEDIZIONI.ultimorespiro.cure; },
   },
   {
-    id: 'pattofulmine', nome: 'Patto del fulmine', max: 1,
-    descrizione: () => 'Il fulmine punitivo colpisce anche i nemici vicini\nma cade dopo solo ' + (BENEDIZIONI.pattofulmine.graziaMs / 1000) + ' s da fermo',
-    applica: (s) => { s.fulmineSuNemici = true; s.graziaFulmineMs = BENEDIZIONI.pattofulmine.graziaMs; },
+    id: 'radici', nome: 'Radici di pietra', max: 1,
+    descrizione: () => 'Da fermo fai il ' + percentuale(BENEDIZIONI.radici.danno - 1) + '% di danno in più\nma i nemici ti raggiungono ogni ' + secondi(BENEDIZIONI.radici.intervalloMs) + ' s invece di ' + secondi(ANTI_FERMO.intervalloMs),
+    applica: (s) => { s.dannoDaFermo = BENEDIZIONI.radici.danno; s.intervalloFermoMs = BENEDIZIONI.radici.intervalloMs; },
   },
   {
     id: 'ombralenta', nome: 'Ombra lenta', max: 1,
@@ -90,8 +90,8 @@ const DIVINE = [
   },
   {
     id: 'faretrabenedetta', nome: 'Faretra benedetta', max: 3,
-    descrizione: () => '+' + BENEDIZIONI.faretrabenedetta.frecce + ' frecce nella faretra\ne ogni uccisione ti restituisce una freccia',
-    applica: (s, liv) => { s.frecceFaretra += BENEDIZIONI.faretrabenedetta.frecce * liv; s.frecceUccisione = BENEDIZIONI.faretrabenedetta.frecceIndietro; },
+    descrizione: () => '+' + BENEDIZIONI.faretrabenedetta.frecce + ' frecce nella faretra\ne la faretra si riempie quando uccidi un élite o un boss',
+    applica: (s, liv) => { s.frecceFaretra += BENEDIZIONI.faretrabenedetta.frecce * liv; s.ricaricaSuForti = true; },
   },
   {
     id: 'giudizio', nome: 'Lama del giudizio', max: 3,

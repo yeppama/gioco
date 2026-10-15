@@ -14,7 +14,9 @@ const METODI_COMBATTIMENTO = {
   // (Ultimo respiro lo raddoppia a vita bassa, Sete di battaglia cresce con le uccisioni)
   dannoFreccia() {
     const ultimo = this.vitaCritica() ? BENEDIZIONI.ultimorespiro.danno : 1;
-    return this.stats.danno * ultimo * (1 + this.seteBonus);
+    // Radici di pietra: danno in più mentre non ti muovi
+    const fermo = this.giocatore.body.velocity.length() < 5 ? this.stats.dannoDaFermo : 1;
+    return this.stats.danno * ultimo * fermo * (1 + this.seteBonus);
   },
 
   // Dove i nemici credono che tu sia: di solito dove sei, ma con Ombra lenta
@@ -25,11 +27,13 @@ const METODI_COMBATTIMENTO = {
   },
 
   // Chiamata da nemici.js a ogni uccisione: effetti delle benedizioni
-  alUccidere() {
+  alUccidere(n) {
     // Patto di sangue: ogni uccisione costa vita (ma non uccide mai)
     if (this.stats.vitaPerUccisione > 0) this.vita = Math.max(1, this.vita - this.stats.vitaPerUccisione);
-    // Faretra benedetta: frecce restituite
-    this.arco.restituisci(this.stats.frecceUccisione);
+    // Recupero frecce: a volte (o sempre) torna indietro una freccia
+    if (Math.random() < this.stats.recuperoFrecce) this.arco.restituisci(1);
+    // Faretra benedetta: uccidere un élite o un boss riempie subito la faretra
+    if (this.stats.ricaricaSuForti && (n.elite || n.eBoss)) this.arco.riempi();
     // Sete di battaglia: danno in più fino a fine round
     if (this.stats.setePerUccisione > 0) {
       this.seteBonus = Math.min(BENEDIZIONI.setebattaglia.dannoMassimo, this.seteBonus + this.stats.setePerUccisione);

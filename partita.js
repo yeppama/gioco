@@ -102,7 +102,7 @@ class ScenaPartita extends Phaser.Scene {
     // --- Comandi, round, interfaccia, evocazioni ---
     this.lame = new LameOrbitanti(this);
     this.scia = new SciaVento(this);
-    this.fulmine = new Fulmine(this);
+    this.antiFermo = new AntiFermo(this);
     this.consumabili = new Consumabili(this);
     this.controlli = new Controlli(this);
     this.round = new GestoreRound(this);
@@ -166,7 +166,7 @@ class ScenaPartita extends Phaser.Scene {
     if (this.controlli.onda()) this.arco.sparaOnda(t);
     this.arco.aggiorna(t, this.controlli.caricaPremuta());
     this.gestisciDifese(t);
-    this.fulmine.aggiorna(t, passo);
+    this.antiFermo.aggiorna(t);
     if (this.arena.terrenoIn(this.giocatore.x, this.giocatore.y) === 'lava') this.subisciDanno(TERRENI.lavaDanno);
     this.lame.aggiorna(t);
     this.scia.aggiorna(t);
@@ -283,7 +283,7 @@ class ScenaPartita extends Phaser.Scene {
     this.arco.nascondi();
     this.lame.nascondi();
     this.scia.svuota();
-    this.fulmine.nascondi();
+    this.antiFermo.nascondi();
     this.interfaccia.nascondiPerMorte();
     this.controlli.azzeraTocchi();
     this.interfaccia.mostraRiepilogo();

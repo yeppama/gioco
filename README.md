@@ -35,7 +35,7 @@ Modalità prova: https://yeppama.github.io/gioco/?debug=1 (L livello, I invincib
 - `lame.js` — lame orbitanti
 - `scia.js` — scia del vento (benedizione divina)
 - `consumabili.js` — sfere di vita nell'arena
-- `fulmine.js` — fulmini su chi resta fermo
+- `fermo.js` — i nemici raggiungono chi resta fermo
 - `round.js` — round, ondate, furia, difficoltà e round dei boss
 - `interfaccia.js` — testi e barre sullo schermo
 - `scelta.js` — la schermata "scegli 1 tra 3"

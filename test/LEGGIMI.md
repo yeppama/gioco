@@ -5,7 +5,7 @@
 
 - ogni abilità, combinazione, benedizione e premio, preso da solo, giri 8 secondi senza errori;
 - tutto preso insieme giri 60 secondi senza errori e senza valori rotti (NaN);
-- chi resta fermo muoia nel round 1;
+- chi resta fermo muoia nel round 1, e da fermo arrivino gruppi di nemici sempre più vicini;
 - il round del boss parta e si giochi;
 - il menu pausa, con tutto preso, non abbia scritte sovrapposte o fuori schermo (italiano e inglese);
 - Seconda vita salvi una volta sola;

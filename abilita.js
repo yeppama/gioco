@@ -58,6 +58,22 @@ const ABILITA = [
     applica: (s, liv) => { s.ricaricaMs *= Math.pow(NA.manirapide.ricarica, liv); },
   },
 
+  {
+    id: 'faretracapiente', nome: 'Faretra capiente', max: 3,
+    descrizione: () => '+' + NA.faretracapiente.frecce + ' frecce nella faretra',
+    applica: (s, liv) => { s.frecceFaretra += NA.faretracapiente.frecce * liv; },
+  },
+  {
+    id: 'recupero', nome: 'Recupero frecce', max: 2,
+    descrizione: (liv) => (NA.recupero.probabilita[liv - 1] >= 1 ? 'Ogni uccisione' : percentuale(NA.recupero.probabilita[liv - 1]) + '% di probabilità che un\'uccisione') + ' ti restituisca una freccia',
+    applica: (s, liv) => { s.recuperoFrecce = NA.recupero.probabilita[liv - 1]; },
+  },
+  {
+    id: 'tripla', nome: 'Freccia tripla', max: 1, rarita: 'rara',
+    descrizione: () => NA.tripla.frecce + ' frecce in fila, una dietro l\'altra\nma ogni raffica costa ' + NA.tripla.costo + ' frecce',
+    applica: (s) => { s.frecceInFila = NA.tripla.frecce; s.costoRaffica = NA.tripla.costo; },
+  },
+
   // --- Elementali ed evocazioni ---
   {
     id: 'fuoco', nome: 'Frecce infuocate', max: 3,

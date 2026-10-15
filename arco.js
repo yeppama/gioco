@@ -35,7 +35,13 @@ class Arco {
     if (this.stats.spintaRicarica) this.scena.respingiNemici(t);
   }
 
-  // Faretra benedetta: un'uccisione restituisce frecce (mai oltre la faretra, non durante la ricarica)
+  // Faretra benedetta: faretra piena all'istante (anche a metà ricarica)
+  riempi() {
+    this.inRicarica = false;
+    this.frecceRimaste = this.stats.frecceFaretra;
+  }
+
+  // Recupero frecce: un'uccisione restituisce frecce (mai oltre la faretra, non durante la ricarica)
   restituisci(quante) {
     if (this.inRicarica || quante <= 0) return;
     this.frecceRimaste = Math.min(this.stats.frecceFaretra, this.frecceRimaste + quante);
@@ -95,8 +101,9 @@ class Arco {
     // Tiro normale automatico
     if (t >= this.prossimoSparo) {
       this.spara();
-      // Una raffica costa una freccia, anche se ne partono di più (Casinò: a volte è gratis)
-      if (Math.random() >= this.stats.frecciaGratis) this.frecceRimaste--;
+      // Una raffica costa una freccia (Freccia tripla: di più), anche se ne partono tante.
+      // Casinò: a volte è gratis
+      if (Math.random() >= this.stats.frecciaGratis) this.frecceRimaste = Math.max(0, this.frecceRimaste - this.stats.costoRaffica);
       this.prossimoSparo = t + this.stats.cadenzaMs;
       if (this.frecceRimaste === 0) this.iniziaRicarica(t);
     }
@@ -132,7 +139,12 @@ class Arco {
         const y = g.y + Math.sin(a) * PARTENZA_FRECCIA + Math.sin(perpendicolare) * spostamento;
         // Furia cieca: una parte delle frecce parte in una direzione qualsiasi
         const aCaso = Math.random() < this.stats.colpiACaso;
-        this.lancia(x, y, aCaso ? Phaser.Math.FloatBetween(-Math.PI, Math.PI) : a);
+        const direzione = aCaso ? Phaser.Math.FloatBetween(-Math.PI, Math.PI) : a;
+        // Freccia tripla: altre frecce sulla stessa linea, un po' più indietro
+        for (let fila = 0; fila < this.stats.frecceInFila; fila++) {
+          const indietro = fila * NA.tripla.distanza;
+          this.lancia(x - Math.cos(direzione) * indietro, y - Math.sin(direzione) * indietro, direzione);
+        }
       }
     }
   }

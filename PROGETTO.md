@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=29`, ~3600 righe di JavaScript in 24 file più la prova automatica.
+Stato: ottobre 2026, versione script `?v=30`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
@@ -44,8 +44,11 @@ Stato: ottobre 2026, versione script `?v=29`, ~3600 righe di JavaScript in 24 fi
 
 ### Regole anti-giocatore-fermo (fondamentali per il design)
 - L'arco **spara da solo alle spalle** del giocatore (direzione opposta al movimento; da fermo resta l'ultima).
-- **Fulmine punitivo** (`fulmine.js`): dopo 1 s da fermo cade un fulmine ogni secondo, con danno base 1 (abbassato da 6 su richiesta di Stefano)
-  che cresce ×1.75 a ogni colpo. Il contatore scende muovendosi, più in fretta se vai veloce.
+- **Anti-fermo** (`fermo.js`, numeri in `ANTI_FERMO`): se resti entro 80 px dal punto in cui ti sei fermato,
+  ogni 4 s compare un gruppo di 3 nemici vicino a te, ogni volta più vicino (400, 300, 200, poi 120 px).
+  Un cerchio rosso che si stringe avvisa dell'arrivo. Uscendo dal cerchio si riparte da capo; tra un round
+  e l'altro non conta; vale anche nel round del boss. Ha preso il posto del **fulmine punitivo**, tolto il
+  15/10 perché rendeva il gioco troppo complicato.
 - Mortai e pioggia del boss mettono zone a terra dove sei tu.
 - Test verificato: chi resta fermo muore nel round 1.
 
@@ -77,7 +80,7 @@ Tutto è globale: l'ordine dei `<script>` in `index.html` conta.
 | `lame.js` | `LameOrbitanti` |
 | `scia.js` | `SciaVento` (benedizione divina Scia del vento) |
 | `consumabili.js` | sfere di vita nell'arena |
-| `fulmine.js` | `Fulmine` punitivo |
+| `fermo.js` | `AntiFermo`: nemici che raggiungono chi resta fermo, con avviso |
 | `round.js` | `GestoreRound`: ritmo, difficoltà, eventi, élite, boss |
 | `interfaccia.js` | HUD (vita, frecce, livello, round, scudi, contatori, barra del boss, banner, riepilogo) |
 | `scelta.js` | scena `scelta`: "scegli 1 tra 3" (stile per tipo: abilita, maledetta, divina, premio) |
@@ -95,7 +98,7 @@ Tutto è globale: l'ordine dei `<script>` in `index.html` conta.
 3. `this.tempo += min(delta, 50)`: **orologio proprio della partita**, si ferma in pausa.
    Tutta la logica usa `this.tempo`, mai `time` di Phaser.
 4. Schivata o movimento → mirino → ricarica, onda, `arco.aggiorna` → difese (rigenerazione, scudo) →
-   fulmine → lava → lame → scia → consumabili → round → zone →
+   anti-fermo → lava → lame → scia → consumabili → round → zone →
    flow field (verso `vista()`) → ogni nemico → bordi delle frecce → trasparenza del giocatore → HUD.
 
 ### Statistiche (pattern centrale)
@@ -134,7 +137,8 @@ Dopo ogni boss: +15% di resistenza agli elementi (massimo 60%).
 ### Abilità (`abilita.js`)
 Freccia doppia (rara), Ventaglio (rara), Rimbalzo, Perforazione, Corda tesa, Casinò (15/40/60% di colpi
 gratis), Mani rapide, Frecce infuocate, Frecce di brina, Lame orbitanti (rara), Vigore, Rigenerazione,
-Scudo spirituale, Passo leggero.
+Scudo spirituale, Passo leggero, Faretra capiente (+10 frecce a livello, ×3), Recupero frecce (50% / 100% di
+riavere 1 freccia a uccisione, ×2), Freccia tripla (rara, ×1: 3 frecce in fila, ma la raffica costa 2 frecce).
 Combinazione: **Vento della fortuna** (Casinò 3 + Passo leggero 2) → 75% di colpi gratis e un tiro
 circolare tanto più frequente quanto è grande la faretra.
 
@@ -147,13 +151,13 @@ Maledette (massimo 1 ciascuna):
 - Mira ossessiva: mira automatica entro 300 px, si spara il 25% più piano, −15% vita massima.
 - Ultimo respiro: danno ×2 sotto il 30% di vita; **tutte le cure dimezzate**; sotto il 30% si ferma
   **solo l'abilità Rigenerazione** (le altre cure funzionano).
-- Patto del fulmine: il fulmine punitivo colpisce anche i nemici entro 130 px (danno ×4), ma cade dopo 0.5 s.
+- Radici di pietra: da fermo (velocità zero) danno +50%, ma i nemici ti raggiungono ogni 2 s invece di 4.
 - Ombra lenta: dopo la schivata i nemici mirano per 1 s al punto da cui sei partito; la schivata costa il doppio.
 - Sete di battaglia: +2% danno a uccisione fino a fine round (massimo +40%); i gruppi arrivano il 25% più spesso.
 - Corpo di cenere: la schivata non costa frecce (anche in ricarica) ma toglie il 3% della vita.
 
 Divine: Luce ristoratrice (cura completa + 1 scudo overheal) · Grazia del vento (+15% velocità, ×3) ·
-Faretra benedetta (+8 frecce, 1 freccia restituita a uccisione, ×3) · Lama del giudizio (+20% danno,
+Faretra benedetta (+15 frecce e faretra piena all'istante uccidendo élite, mini boss o boss, ×3) · Lama del giudizio (+20% danno,
 +20% in più contro boss ed élite, ×3) · Occhio del cacciatore (mira entro 350 px, ×1) · Ricarica sacra
 (−30% ricarica e i nemici vicini vengono respinti, ×2) · Seconda vita (una volta per partita al 50%) ·
 Scia del vento (la schivata lascia una scia che ferisce) · Calice (+8% velocità per ogni scudo overheal attivo).
@@ -237,5 +241,6 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
 - Schivata pagata in frecce; faretra base 30 frecce, ricarica 2 s, massimo 200 frecce.
 - Il round finisce solo quando i nemici sono tutti morti.
 - Le divine arrivano **solo** dopo un boss.
-- Il fulmine è la contromisura principale contro il gioco statico.
+- La contromisura contro il gioco statico è l'anti-fermo (nemici che ti raggiungono), non un danno diretto:
+  il fulmine punitivo è stato tolto il 15/10.
 - Lingua italiana e inglese, scelta dal menu pausa e ricordata dal browser (`localStorage`, con try/catch).
