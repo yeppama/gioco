@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=25`, ~3600 righe di JavaScript in 24 file più la prova automatica.
+Stato: ottobre 2026, versione script `?v=26`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
