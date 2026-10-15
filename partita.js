@@ -27,7 +27,7 @@ class ScenaPartita extends Phaser.Scene {
     // Esperienza e scelte
     this.livello = 1;
     this.exp = 0;
-    this.expNecessaria = EXP_PRIMO_LIVELLO;
+    this.expNecessaria = this.costoLivello(1);
     // Scelte da mostrare appena possibile, in ordine. All'inizio si sceglie la prima abilità.
     this.codaScelte = [{ tipo: 'abilita', titolo: tr('scelta.prima') }];
     this.dannoNelRound = false;  // per il premio del round senza danni

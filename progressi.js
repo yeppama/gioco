@@ -10,12 +10,22 @@
 // ============================================================
 
 const METODI_PROGRESSI = {
+  // Esperienza per passare dal livello "liv" al successivo.
+  // I primi livelli costano meno (EXP_INIZIALE), poi vale la crescita normale.
+  costoLivello(liv) {
+    const normale = EXP_PRIMO_LIVELLO * Math.pow(CRESCITA_EXP, liv - 1);
+    const fine = EXP_INIZIALE.finoAlLivello;
+    const sconto = liv >= fine ? 1
+      : EXP_INIZIALE.scontoPrimo + (1 - EXP_INIZIALE.scontoPrimo) * (liv - 1) / (fine - 1);
+    return Math.round(normale * sconto);
+  },
+
   guadagnaExp(quantita) {
     this.exp += quantita * this.stats.expMolt;
     while (this.exp >= this.expNecessaria) {
       this.exp -= this.expNecessaria;
       this.livello++;
-      this.expNecessaria = Math.round(EXP_PRIMO_LIVELLO * Math.pow(CRESCITA_EXP, this.livello - 1));
+      this.expNecessaria = this.costoLivello(this.livello);
       this.codaScelte.push({ tipo: 'abilita', titolo: tr('scelta.livello', this.livello) });
     }
   },

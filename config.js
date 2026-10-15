@@ -24,14 +24,14 @@ const ARENA = {
 };
 
 // Giocatore (valori di partenza: le abilità li modificano, vedi statistiche.js)
-const VELOCITA = 250;       // pixel al secondo
+const VELOCITA = 300;       // pixel al secondo (era 250: più svelto fin dall'inizio)
 const LATO_GIOCATORE = 32;  // grandezza del quadrato
 const VITA_MAX = 100;       // punti vita iniziali
 const INVULNERABILITA_MS = 800; // dopo un colpo, per quanto non si subisce altro danno
 
 // Arco: spara sempre da solo, alle spalle del giocatore (al contrario di dove cammina).
 // Dopo un certo numero di frecce la faretra è vuota e si ricarica.
-const CADENZA_MS = 400;          // un colpo ogni 0,4 secondi
+const CADENZA_MS = 320;          // un colpo ogni 0,32 secondi (era 0,4)
 const FRECCE_FARETRA = 30;       // frecce prima di dover ricaricare
 const RICARICA_MS = 2000;        // durata della ricarica
 const VELOCITA_FRECCIA = 600;    // pixel al secondo
@@ -203,6 +203,9 @@ const LIMITI = {
 // poi ogni livello ne chiede di più (vedi CRESCITA_EXP)
 const EXP_PRIMO_LIVELLO = 40;
 const CRESCITA_EXP = 1.3;   // ogni livello chiede il 30% in più del precedente
+// Primi livelli più rapidi: il livello 1 costa il 30% del normale, poi lo sconto
+// cala piano piano fino a sparire al livello 9 (da lì valgono solo i numeri sopra)
+const EXP_INIZIALE = { scontoPrimo: 0.3, finoAlLivello: 9 };
 
 // Round: per un certo tempo (DURATA_ROUND) arrivano nemici sempre più spesso.
 // Poi smettono di arrivare, ma il round finisce solo quando li hai uccisi tutti:

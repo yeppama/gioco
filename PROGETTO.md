@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=28`, ~3600 righe di JavaScript in 24 file più la prova automatica.
+Stato: ottobre 2026, versione script `?v=29`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
@@ -29,7 +29,9 @@ Stato: ottobre 2026, versione script `?v=28`, ~3600 righe di JavaScript in 24 fi
 3. **Ciclo** = 10 round. Il round 7 ha il **mini boss** (La Sentinella Spezzata), il round 10 ha il
    **boss** (Il Custode Cinereo) con un'orda. Dopo il boss l'arena si rigenera più grande, con più
    ostacoli e terreni, e tutto diventa più forte.
-4. **Esperienza** dai nemici → level up → 1 abilità su 3. Ogni livello chiede il 30% in più.
+4. **Esperienza** dai nemici → level up → 1 abilità su 3. Ogni livello chiede il 30% in più, ma i primi
+   costano meno (`EXP_INIZIALE`: il livello 1 il 30% del normale, sconto che sparisce al livello 9).
+   Il personaggio parte a velocità 300 e spara ogni 320 ms (alzati da 250 e 400 su richiesta di Stefano).
 5. **Benedizioni**:
    - *Maledette*: le lascia il mini boss. Forti ma con un prezzo. Al loro posto c'è **Riposo** (cura il 20%).
    - *Divine*: solo dopo aver sconfitto un boss. Nessun prezzo.
