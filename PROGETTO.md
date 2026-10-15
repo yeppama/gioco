@@ -5,7 +5,7 @@ il codice, quali regole seguire, cosa è stato deciso e cosa resta da fare.
 Le regole di lavoro obbligatorie sono in `CLAUDE.md`; questo file le dà per lette.
 **Aggiornalo quando cambi un sistema o prendi una decisione di design.**
 
-Stato: ottobre 2026, versione script `?v=26`, ~3600 righe di JavaScript in 24 file più la prova automatica.
+Stato: ottobre 2026, versione script `?v=27`, ~3600 righe di JavaScript in 24 file più la prova automatica.
 
 ---
 
@@ -42,7 +42,7 @@ Stato: ottobre 2026, versione script `?v=26`, ~3600 righe di JavaScript in 24 fi
 
 ### Regole anti-giocatore-fermo (fondamentali per il design)
 - L'arco **spara da solo alle spalle** del giocatore (direzione opposta al movimento; da fermo resta l'ultima).
-- **Fulmine punitivo** (`fulmine.js`): dopo 1 s da fermo cade un fulmine ogni secondo, con danno base 6
+- **Fulmine punitivo** (`fulmine.js`): dopo 1 s da fermo cade un fulmine ogni secondo, con danno base 1 (abbassato da 6 su richiesta di Stefano)
   che cresce ×1.75 a ogni colpo. Il contatore scende muovendosi, più in fretta se vai veloce.
 - Mortai e pioggia del boss mettono zone a terra dove sei tu.
 - Test verificato: chi resta fermo muore nel round 1.
@@ -210,9 +210,9 @@ Premi: Respiro (cura 30%) · Tempra (+10% vita max) · Faretra ampia (+4) · Pas
 7. Le **chiavi delle fonti di danno** sono in italiano (`'Frecce'`, `'Fuoco'`…) e servono anche da chiave di
    traduzione: funziona, ma un id neutro (`'frecce'`) sarebbe più pulito.
 8. ~~Menu pausa senza regole speciali~~ fatto: mostra scudi overheal, Sete di battaglia, Ultimo respiro
-   attivo o no, Seconda vita pronta o usata, cure e danno contro i boss. Le colonne si impilano da sole e
-   rimpiccioliscono il testo se serve (`colonna()` in `pausa.js`); la prova controlla che nessuna scritta
-   si sovrapponga o esca dallo schermo, in italiano e in inglese.
+   attivo o no, Seconda vita pronta o usata, cure e danno contro i boss. La pausa ha **tre pagine**
+   (Abilità / Benedizioni / Statistiche, con ← → o 1-2-3) scelte da Stefano al posto delle colonne impilate;
+   la prova controlla ogni pagina: niente scritte sovrapposte, fuori schermo o sotto i 14 px, in italiano e in inglese.
 9. `vitaNemiciMolt` (Occhi di brace) vale solo per i nemici nati **dopo** averla presa. Voluto, ma non scritto.
 
 ## 8. Da fare (rimandato, in ordine indicativo)

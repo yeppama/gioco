@@ -107,7 +107,7 @@ const TIRO_CIRCOLARE = {
 const FULMINE = {
   graziaMs: 1000,
   intervalloMs: 1000,
-  dannoBase: 6,
+  dannoBase: 1,         // primo colpo; poi x1.75 a ogni colpo (1, 1.75, 3, 5.4, 9.4, 16...)
   moltiplicatore: 1.75,
   caloAlSecondo: 1.5,   // livelli persi al secondo muovendosi a velocità base
 };

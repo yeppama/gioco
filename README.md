@@ -11,7 +11,7 @@ Roguelite dark fantasy per browser, in stile Archero. Progetto hobby in sviluppo
 - Spazio (tieni premuto): colpo caricato
 - Spazio due volte di fila: colpo onda (serve una faretra da 50 frecce)
 - Ctrl: ricarica manuale
-- Esc o P: pausa, con abilità, benedizioni e statistiche
+- Esc o P: pausa, con tre pagine (abilità, benedizioni, statistiche): si cambia con ← → o 1, 2, 3
 - 1, 2, 3 o clic: scegliere (4: Riposo al posto di una maledetta, Salta al posto di un premio)
 - R: ricominciare dopo la morte
 - Per ora solo tastiera: la versione per telefono è sospesa

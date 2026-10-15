@@ -164,25 +164,33 @@ const PROVE = {
       window.passi(2);
       const pausa = window.gioco.scene.getScene('pausa');
       if (!pausa.scene.isActive()) { problemi.push('la pausa non si apre (' + lingua + ')'); continue; }
-      for (const o of pausa.children.list) {
-        if (o.type !== 'Text') continue;
-        const b = o.getBounds();
-        const pulsante = o.y >= ALTEZZA - 70; // le scritte dei pulsanti stanno lì apposta
-        if (b.right > LARGHEZZA + 1 || (!pulsante && b.bottom > ALTEZZA - 85)) {
-          problemi.push(lingua + ': scritta fuori posto "' + o.text.split('\n')[0] + '..." (fino a y=' + Math.round(b.bottom) + ')');
+      // Ogni pagina della pausa, una alla volta
+      for (const pagina of PAGINE_PAUSA) {
+        pausa.vaiA(pagina);
+        window.passi(2);
+        if (pausa.pagina !== pagina) problemi.push(lingua + ': la pagina ' + pagina + ' non si apre');
+        for (const o of pausa.children.list) {
+          if (o.type !== 'Text') continue;
+          const b = o.getBounds();
+          const pulsante = o.y >= ALTEZZA - 70; // le scritte dei pulsanti stanno lì apposta
+          if (b.right > LARGHEZZA + 1 || (!pulsante && b.bottom > ALTEZZA - 85)) {
+            problemi.push(lingua + ': scritta fuori posto "' + o.text.split('\n')[0] + '..." (fino a y=' + Math.round(b.bottom) + ')');
+          }
+          if (o.text.includes('undefined') || o.text.includes('NaN')) problemi.push(lingua + ': scritta rotta "' + o.text.slice(0, 40) + '"');
         }
-        if (o.text.includes('undefined') || o.text.includes('NaN')) problemi.push(lingua + ': scritta rotta "' + o.text.slice(0, 40) + '"');
-      }
-      // Nessuna scritta sopra un'altra
-      const scritte = pausa.children.list.filter(o => o.type === 'Text' && o.active);
-      for (let i = 0; i < scritte.length; i++) {
-        for (let j = i + 1; j < scritte.length; j++) {
-          const a = scritte[i].getBounds();
-          const b = scritte[j].getBounds();
-          if (Phaser.Geom.Rectangle.Intersection(a, b).width > 2 && Phaser.Geom.Rectangle.Intersection(a, b).height > 2) {
-            problemi.push(lingua + ': scritte sovrapposte "' + scritte[i].text.split('\n')[0] + '" e "' + scritte[j].text.split('\n')[0] + '"');
+        // Nessuna scritta sopra un'altra
+        const scritte = pausa.children.list.filter(o => o.type === 'Text' && o.active);
+        for (let i = 0; i < scritte.length; i++) {
+          for (let j = i + 1; j < scritte.length; j++) {
+            const a = scritte[i].getBounds();
+            const b = scritte[j].getBounds();
+            if (Phaser.Geom.Rectangle.Intersection(a, b).width > 2 && Phaser.Geom.Rectangle.Intersection(a, b).height > 2) {
+              problemi.push(lingua + ': scritte sovrapposte "' + scritte[i].text.split('\n')[0] + '" e "' + scritte[j].text.split('\n')[0] + '"');
+            }
           }
         }
+        // Il testo non deve diventare troppo piccolo da leggere
+        for (const o of scritte) if (parseInt(o.style.fontSize, 10) < 14) problemi.push(lingua + ', ' + pagina + ': testo piccolo (' + o.style.fontSize + ')');
       }
       pausa.riprendi();
       window.passi(2);
@@ -195,7 +203,8 @@ const PROVE = {
   secondaVita: () => {
     const s = window.nuovaPartita('muove');
     s.prendiAbilita('secondavita');
-    const colpoMortale = () => { s.ultimoColpo = -1e9; s.fineSchivata = 0; s.scudiOverheal = 0; s.subisciDanno(99999); };
+    // (si tolgono le difese che potrebbero esserci per caso: la prima abilità è scelta a caso)
+    const colpoMortale = () => { s.ultimoColpo = -1e9; s.fineSchivata = 0; s.scudiOverheal = 0; s.scudoPronto = false; s.subisciDanno(99999); };
     colpoMortale();
     if (s.morto || s.vita <= 0) return ['Seconda vita non ha salvato il giocatore'];
     colpoMortale();
